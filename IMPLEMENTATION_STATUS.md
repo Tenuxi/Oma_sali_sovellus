@@ -1,5 +1,16 @@
 # Toteutustilanne
 
+## v1.2 käytettävyys- ja luotettavuuspäivitys
+
+- Tiivistetty kaikkien viiden näkymän hierarkiaa, välejä ja rivejä. Sarjakentät ovat aiempaa matalampia mutta kosketusalueet vähintään 48 dp.
+- Yhteinen WorkoutSummary määrää etusivun/treenin sarja- ja liikemäärät sekä palkin. Valmistuminen perustuu tavoitesarjoihin. Päättynyt ja kokonaan suoritettu treeni erotetaan.
+- Palkin vanha laskenta oli jo nolla tapauksessa 0/3. Material 3:n päätepistemerkki aiheutti kuitenkin harhaanjohtavan vihreän pisteen oikealle: korvattu palkilla, joka ei piirrä vihreää nollassa.
+- Kuvista puuttuvat pysyvät harjoitus- ja liike-esiintymien tunnisteet, eikä puhelimen tietokantaa ole saatavilla. Siksi kuvien 0/2-sarjan eroa tai samannimisiä liikkeitä ei oleteta samaksi tietueeksi. Regressiotesti käyttää todistetusti samaa treeni-ID:tä ja muokkaa historiaa etusivun ollessa auki. Samannimiset liikkeet erotellaan järjestysnumeroin ja aktiivinen esiintymä suodatetaan tunnisteella.
+- Vanha syöttöluonnos ei varjosta korjattua Room-arvoa. Poikkeava luonnos säilyy käyttäjän palautettavaksi; syötteitä ei muuteta arvaamalla.
+- Yksi mittapiste esitetään kompaktisti, nolla pistettä yhtenä tyhjänä tilana ja vähintään kaksi kuvaajana. Painoarvot säilyvät koskemattomina.
+- Ei Room-migraatiota, datan resetointia tai varmuuskopioformaatin muutosta. ApplicationId ja release-avain ovat samat.
+- Kohdennetut yhteenveto-, luonnos-, volyymi-/ennätys- ja Compose-regressiotestit mukana Actionsissa. Kuvakaappaukset myös 320 dp leveydeltä molemmissa teemoissa. Viimeisin todellinen tulos: [Actions](https://github.com/Tenuxi/Oma_sali_sovellus/actions).
+
 ## v1.1-käyttöliittymäpäivitys
 
 - UI-001: tiivis liikekirjasto ja toimintovalikot; ohjelman yhden päivän muokkaus ja skrollattava päivänvalinta.

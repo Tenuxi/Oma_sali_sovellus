@@ -2,9 +2,14 @@ package fi.omasali.app
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -20,33 +25,50 @@ import kotlinx.coroutines.withContext
         vm.run { try { val sid = vm.repo.start(p.id, d.id); withContext(Dispatchers.Main) { open(sid) } } finally { withContext(Dispatchers.Main) { starting = false } } }
     }
     Page("OMA SALI") {
-        Text("Tervetuloa treenaamaan!", style = MaterialTheme.typography.titleMedium)
+        Text("Tervetuloa treenaamaan!", style = MaterialTheme.typography.bodyMedium)
         if (active == null) Text("Luo ensin ohjelma Ohjelmat-välilehdellä.")
         active?.let { p -> CardBlock {
-            Text("Aktiivinen ohjelma", style = MaterialTheme.typography.labelMedium)
-            Text(p.name, style = MaterialTheme.typography.titleMedium)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Aktiivinen ohjelma", style = MaterialTheme.typography.labelSmall)
+                    Text(p.name, style = MaterialTheme.typography.titleMedium)
+                }
+                Text("Aktiivinen", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+            }
             HorizontalDivider()
             val next = nextDay(p, sessions)
-            Text("Seuraava treeni", style = MaterialTheme.typography.labelMedium)
-            Text(next?.name ?: "Lisää ohjelmaan treenipäivä", style = MaterialTheme.typography.headlineSmall)
+            Text("Seuraava treeni", style = MaterialTheme.typography.labelSmall)
+            Text(next?.name ?: "Lisää ohjelmaan treenipäivä", style = MaterialTheme.typography.titleLarge)
             Action("▶  Aloita treeni", !starting && next != null && next.exercises.isNotEmpty()) { next?.let { start(p, it) } }
-            OutlinedButton(onClick = { choose = true }, modifier = Modifier.fillMaxWidth(), enabled = !starting && p.days.isNotEmpty()) { Text("Valitse toinen treenipäivä") }
+            TextButton(onClick = { choose = true }, modifier = Modifier.fillMaxWidth(), enabled = !starting && p.days.isNotEmpty()) { Text("Valitse toinen treenipäivä", style = MaterialTheme.typography.bodySmall) }
         } }
         val ongoing = sessions.filter { it.status == Status.ACTIVE }.sortedByDescending { it.started }
-        Text("Keskeneräiset treenit · ${ongoing.size}", style = MaterialTheme.typography.titleMedium)
+        Text("Keskeneräiset treenit · ${ongoing.size}", style = MaterialTheme.typography.titleSmall)
         if (ongoing.isEmpty()) Text("Ei keskeneräisiä treenejä.", style = MaterialTheme.typography.bodySmall)
-        ongoing.forEach { s -> CompactRow(s.dayName, "${s.exercises.count(::isComplete)}/${s.exercises.size} liikettä · ${date(s.started)}", "↗", { open(s.id) }) { TextButton(onClick = { open(s.id) }) { Text("Jatka") } } }
-        sessions.filter { it.status == Status.FINISHED }.maxByOrNull { it.ended ?: it.started }?.let { last ->
-            Text("Edellinen treeni", style = MaterialTheme.typography.titleMedium)
-            Surface(modifier = Modifier.clickable { open(last.id) }) { CardBlock {
-                Text(last.dayName, style = MaterialTheme.typography.titleLarge)
-                Text("${last.programName} · ${date(last.started)}", style = MaterialTheme.typography.bodySmall)
-                Text("${last.exercises.count(::isComplete)} tehtyä liikettä  ·  ${last.exercises.filterNot { it.skipped }.sumOf { e -> e.sets.count { it.done } }} sarjaa")
-                newRecordSummary(last, sessions)?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
+        ongoing.forEach { s ->
+            val summary = summarize(s)
+            CompactRow(s.dayName, "${summary.completedExercises}/${summary.totalExercises} liikettä · ${summary.completedSets} sarjaa tehty", "↗", { open(s.id) }) { TextButton(onClick = { open(s.id) }) { Text("Jatka") } }
+        }
+        latestFinished(sessions)?.let { last ->
+            val summary = summarize(last)
+            Surface(modifier = Modifier.clickable { open(last.id) }.testTag("last-workout-${last.id}")) { CardBlock {
+                Text("Edellinen treeni", style = MaterialTheme.typography.titleSmall)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(last.dayName, style = MaterialTheme.typography.titleMedium)
+                        Text("${last.programName} · ${date(last.started)}", style = MaterialTheme.typography.bodySmall)
+                    }
+                    Text("›", style = MaterialTheme.typography.titleLarge)
+                }
+                Text("${summary.completedExercises}/${summary.totalExercises} liikettä valmiina · ${summary.completedSets} sarjaa tehty", Modifier.testTag("last-workout-counts"), style = MaterialTheme.typography.bodyMedium)
+                if (summary.completedExercises + summary.skippedExercises < summary.totalExercises) Text("Treeni päätetty osittain tehtynä", style = MaterialTheme.typography.labelSmall)
+                newRecordSummary(last, sessions)?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary) }
             } }
         }
     }
     if (choose && active != null) AlertDialog(onDismissRequest = { choose = false }, title = { Text("Valitse treenipäivä") }, text = {
-        Column { ChoiceField("Päivä", "Valitse aloitettava päivä", active.days.filter { it.exercises.isNotEmpty() }.map { it.id to it.name }) { id -> choose = false; start(active, active.days.first { it.id == id }) } }
+        Column(Modifier.heightIn(max = 320.dp).verticalScroll(rememberScrollState())) {
+            active.days.forEach { day -> TextButton(onClick = { choose = false; start(active, day) }, enabled = day.exercises.isNotEmpty(), modifier = Modifier.fillMaxWidth()) { Text(day.name) } }
+        }
     }, confirmButton = { TextButton(onClick = { choose = false }) { Text("Sulje") } })
 }

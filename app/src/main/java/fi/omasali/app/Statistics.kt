@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -52,14 +53,23 @@ private fun number(value: Double) = java.math.BigDecimal.valueOf(value).setScale
     Text(title, style = MaterialTheme.typography.titleMedium)
     if (points.isEmpty()) { Text("Ei kirjattuja suorituksia valitulla aikavälillä."); return }
     val sorted = points.sortedBy { it.first }
-    val min = sorted.minOf { it.second }; val max = sorted.maxOf { it.second }
-    val range = (max - min).coerceAtLeast(1.0)
+    if (sorted.size == 1) {
+        Text("${number(sorted.single().second)} $unit", style = MaterialTheme.typography.headlineSmall)
+        Text(date(sorted.single().first), style = MaterialTheme.typography.bodySmall)
+        Text("Yksi suoritus – kehityskäyrä muodostuu, kun tuloksia on vähintään kaksi", Modifier.testTag("single-measurement"), style = MaterialTheme.typography.bodySmall)
+        return
+    }
+    val minimum = sorted.minOf { it.second }; val maximum = sorted.maxOf { it.second }
+    val margin = maxOf((maximum - minimum) * .1, maximum * .05, .5)
+    val min = (minimum - margin).coerceAtLeast(0.0)
+    val max = maximum + margin
+    val range = max - min
     val span = (sorted.last().first - sorted.first().first).coerceAtLeast(1).toDouble()
     var selected by remember(sorted) { mutableIntStateOf(sorted.lastIndex) }
     val color = MaterialTheme.colorScheme.primary
     val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
     val gridColor = MaterialTheme.colorScheme.outlineVariant
-    Text("${number(sorted.last().second)} $unit", style = MaterialTheme.typography.headlineMedium)
+    Text("${number(sorted.last().second)} $unit", style = MaterialTheme.typography.headlineSmall)
     Text("Viimeisin · ${date(sorted.last().first)}", style = MaterialTheme.typography.bodySmall)
     fun position(index: Int, width: Float, height: Float, left: Float, padding: Float): Offset {
         val (time, value) = sorted[index]
@@ -68,7 +78,7 @@ private fun number(value: Double) = java.math.BigDecimal.valueOf(value).setScale
     }
     val density = androidx.compose.ui.platform.LocalDensity.current
     val left = with(density) { 44.dp.toPx() }; val padding = with(density) { 14.dp.toPx() }
-    Canvas(Modifier.fillMaxWidth().height(180.dp).semantics { contentDescription = "$title, ${sorted.size} pistettä. Valittu ${date(sorted[selected].first)}, ${number(sorted[selected].second)} $unit" }.pointerInput(sorted) {
+    Canvas(Modifier.fillMaxWidth().height(156.dp).testTag("development-chart").semantics { contentDescription = "$title, ${sorted.size} pistettä. Valittu ${date(sorted[selected].first)}, ${number(sorted[selected].second)} $unit" }.pointerInput(sorted) {
         detectTapGestures { touch -> selected = sorted.indices.minByOrNull { i -> val p = position(i, size.width.toFloat(), size.height.toFloat(), left, padding); hypot(p.x - touch.x, p.y - touch.y) } ?: 0 }
     }) {
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = labelColor.toArgb(); textSize = 11.sp.toPx() }
@@ -82,7 +92,11 @@ private fun number(value: Double) = java.math.BigDecimal.valueOf(value).setScale
         drawPath(path, color, style = Stroke(2.dp.toPx()))
         sorted.indices.forEach { i -> drawCircle(color, (if (i == selected) 6 else 3).dp.toPx(), position(i, size.width, size.height, left, padding)) }
     }
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text(date(sorted.first().first).substringBefore(' '), style = MaterialTheme.typography.labelSmall); Text(date(sorted.last().first).substringBefore(' '), style = MaterialTheme.typography.labelSmall) }
+    if (sorted.first().first != sorted.last().first) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        val sameDay = date(sorted.first().first).substringBefore(' ') == date(sorted.last().first).substringBefore(' ')
+        Text(if (sameDay) date(sorted.first().first).substringAfter(' ') else date(sorted.first().first).substringBefore(' '), style = MaterialTheme.typography.labelSmall)
+        Text(if (sameDay) date(sorted.last().first).substringAfter(' ') else date(sorted.last().first).substringBefore(' '), style = MaterialTheme.typography.labelSmall)
+    }
     Text("${date(sorted[selected].first)} · ${number(sorted[selected].second)} $unit", color = MaterialTheme.colorScheme.primary)
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         TextButton(onClick = { selected-- }, enabled = selected > 0) { Text("← Edellinen piste") }

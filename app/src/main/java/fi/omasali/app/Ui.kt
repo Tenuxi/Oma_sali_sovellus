@@ -57,15 +57,15 @@ fun <T> List<T>.move(index: Int, delta: Int): List<T> = toMutableList().apply { 
     val pageScroll = rememberScrollState()
     LaunchedEffect(scrollKey) { if (scrollKey != null) pageScroll.scrollTo(0) }
     Box(Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.TopCenter) {
-    Column(Modifier.widthIn(max = 800.dp).fillMaxWidth().verticalScroll(pageScroll).imePadding().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text(title, style = MaterialTheme.typography.headlineMedium)
+    Column(Modifier.widthIn(max = 800.dp).fillMaxWidth().verticalScroll(pageScroll).imePadding().padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(title, style = MaterialTheme.typography.headlineSmall)
         content()
         Spacer(Modifier.height(24.dp))
     }
     }
 }
 @Composable fun CardBlock(content: @Composable ColumnScope.() -> Unit) {
-    Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp), content = content) }
+    Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp), content = content) }
 }
 @Composable fun Action(label: String, enabled: Boolean = true, onClick: () -> Unit) { Button(onClick = onClick, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text(label) } }
 @Composable fun Confirm(label: String, message: String, action: () -> Unit) {
@@ -89,7 +89,7 @@ fun <T> List<T>.move(index: Int, delta: Int): List<T> = toMutableList().apply { 
         sessions.forEach { s -> CardBlock {
             Text("${s.programName} · ${s.dayName}", style = MaterialTheme.typography.titleMedium)
             Text("${date(s.started)} · ${if (s.status == Status.ACTIVE) "Kesken" else "Valmis"}")
-            Text("${s.exercises.sumOf { e -> e.sets.count { it.done && !e.skipped } }} sarjaa · ${kg(s.exercises.sumOf(::volume))} kg volyymi")
+            Text("${summarize(s).completedSets} sarjaa · ${kg(s.exercises.sumOf(::volume))} kg volyymi")
             Action("Avaa ja muokkaa") { open(s.id) }
         } }
     }

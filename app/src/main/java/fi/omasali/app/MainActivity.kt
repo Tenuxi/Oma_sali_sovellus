@@ -17,11 +17,12 @@ import kotlinx.coroutines.flow.*
 
 class SaliViewModel(app: Application) : AndroidViewModel(app) {
     val repo = Repository(SaliDatabase.open(app))
-    val rows = repo.records.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val rows = repo.records.flowOn(Dispatchers.IO).stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
     var error by mutableStateOf<String?>(null)
     var ready by mutableStateOf(false)
     var ui by mutableStateOf(UiState())
         private set
+    private var liveDrafts by mutableStateOf(emptySet<String>())
     private val uiStore = UiStateStore(app.preferences)
     private val commands = Channel<suspend () -> Unit>(Channel.UNLIMITED)
     init {
@@ -37,20 +38,33 @@ class SaliViewModel(app: Application) : AndroidViewModel(app) {
     fun run(block: suspend () -> Unit) { commands.trySend(block) }
     fun updateUi(change: (UiState) -> UiState) {
         ui = change(ui)
-        val snapshot = ui
-        run { uiStore.save(snapshot) }
+        run { uiStore.save(withContext(Dispatchers.Main) { ui }) }
     }
     fun openExercise(sessionId: String, exerciseId: String?) = updateUi { it.copy(opened = it.opened + (sessionId to (exerciseId ?: "summary"))) }
     fun stats(change: (StatsSelection) -> StatsSelection) = updateUi { it.copy(stats = change(it.stats)) }
+    fun draftFor(set: WorkoutSet, load: Load): SetDraft = ui.drafts[set.id]?.takeIf { set.id in liveDrafts || isDraftCurrent(it, set, load) } ?: SetDraft(set)
+    fun hasOlderDraft(set: WorkoutSet, load: Load) = ui.drafts[set.id]?.let { set.id !in liveDrafts && !isDraftCurrent(it, set, load) } ?: false
     fun editSet(sessionId: String, exerciseId: String, set: WorkoutSet, load: Load, draft: SetDraft) {
-        // Draft text survives collapsing, navigation and process recreation, including partial input.
-        updateUi { it.copy(drafts = it.drafts + (set.id to draft)) }
-        val updated = runCatching { draft.applyTo(set, load) }.getOrNull() ?: return
-        exercise(sessionId, exerciseId) { e -> e.copy(sets = e.sets.map { if (it.id == set.id) updated else it }) }
+        val input = draft.copy(base = set)
+        liveDrafts = liveDrafts + set.id
+        updateUi { it.copy(drafts = it.drafts + (set.id to input)) }
+        val updated = runCatching { input.applyTo(set, load) }.getOrNull() ?: return
+        run {
+            repo.updateSession(sessionId) { s -> s.copy(exercises = s.exercises.map { e -> if (e.id == exerciseId) e.copy(sets = e.sets.map { if (it.id == set.id) updated else it }) else e }) }
+        }
     }
     fun save(r: Record) = run { repo.save(r) }
     fun program(id: String, f: (TrainingProgram) -> TrainingProgram) = run { repo.updateProgram(id, f) }
-    fun session(id: String, f: (WorkoutSession) -> WorkoutSession) = run { repo.updateSession(id, f) }
+    fun session(id: String, f: (WorkoutSession) -> WorkoutSession) = run {
+        var changed = emptySet<String>()
+        repo.updateSession(id) { before ->
+            val after = f(before)
+            val newSets = after.exercises.flatMap { it.sets }.associateBy { it.id }
+            changed = before.exercises.flatMap { it.sets }.filter { newSets[it.id] != it }.map { it.id }.toSet()
+            after
+        }
+        withContext(Dispatchers.Main) { liveDrafts = liveDrafts - changed }
+    }
     fun exercise(sessionId: String, id: String, f: (WorkoutExercise) -> WorkoutExercise) = session(sessionId) { s -> s.copy(exercises = s.exercises.map { if (it.id == id) f(it) else it }) }
 }
 class MainActivity : ComponentActivity() {

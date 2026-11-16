@@ -22,10 +22,10 @@ data class MenuAction(val label: String, val enabled: Boolean = true, val action
 }
 @Composable fun CompactRow(title: String, subtitle: String, leading: String = "", onClick: (() -> Unit)? = null, trailing: @Composable () -> Unit = {}) {
     Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.fillMaxWidth().then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)) {
-        Row(Modifier.padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 8.dp).heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(Modifier.padding(start = 12.dp, end = 4.dp, top = 2.dp, bottom = 2.dp).heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             if (leading.isNotBlank()) Surface(shape = RoundedCornerShape(10.dp), color = MaterialTheme.colorScheme.surfaceContainerHighest) { Box(Modifier.size(36.dp), contentAlignment = Alignment.Center) { Text(leading, color = MaterialTheme.colorScheme.primary) } }
             Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(title, style = MaterialTheme.typography.bodyLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 if (subtitle.isNotEmpty()) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             trailing()
@@ -40,15 +40,34 @@ data class MenuAction(val label: String, val enabled: Boolean = true, val action
 }
 @Composable fun ChoiceField(label: String, selected: String, choices: List<Pair<String, String>>, choose: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(label, style = MaterialTheme.typography.labelMedium)
+    Column {
         Box {
-            OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(10.dp), enabled = choices.isNotEmpty()) {
-                Text(selected, Modifier.weight(1f), maxLines = 2); Text("⌄")
+            OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp), shape = RoundedCornerShape(10.dp), enabled = choices.isNotEmpty()) {
+                Column(Modifier.weight(1f)) {
+                    Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(selected, style = MaterialTheme.typography.bodyMedium, maxLines = 2)
+                }
+                Text("⌄")
             }
             DropdownMenu(expanded, { expanded = false }, modifier = Modifier.heightIn(max = 320.dp)) {
                 choices.forEach { (id, text) -> DropdownMenuItem(text = { Text(text) }, onClick = { choose(id); expanded = false }) }
             }
         }
     }
+}
+
+@Composable fun CompactInput(value: String, label: String, modifier: Modifier = Modifier, keyboard: androidx.compose.ui.text.input.KeyboardType = androidx.compose.ui.text.input.KeyboardType.Text, change: (String) -> Unit) {
+    androidx.compose.foundation.text.BasicTextField(
+        value = value, onValueChange = change, singleLine = true,
+        modifier = modifier.heightIn(min = 48.dp).semantics { contentDescription = label },
+        textStyle = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface),
+        cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
+        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = keyboard),
+        decorationBox = { inner ->
+            Box(Modifier.fillMaxWidth().padding(vertical = 6.dp).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 5.dp), contentAlignment = Alignment.CenterStart) {
+                if (value.isEmpty()) Text(if (keyboard == androidx.compose.ui.text.input.KeyboardType.Text) label else "—", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                inner()
+            }
+        }
+    )
 }

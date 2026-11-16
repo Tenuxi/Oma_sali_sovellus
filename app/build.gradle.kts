@@ -13,7 +13,7 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = providers.environmentVariable("VERSION_CODE").orNull?.toInt() ?: 1
-        versionName = providers.environmentVariable("VERSION_NAME").orNull ?: "1.1.0-dev"
+        versionName = providers.environmentVariable("VERSION_NAME").orNull ?: "1.2.0-dev"
     }
     signingConfigs {
         create("release") {

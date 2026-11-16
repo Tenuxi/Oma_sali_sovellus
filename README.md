@@ -1,5 +1,22 @@
 # OMA SALI
 
+## v1.2: tiiviimpi kirjaus ja yhtenäiset yhteenvedot
+
+Sarjakirjaus käyttää matalia numerokenttiä 48 dp kosketusalueilla. Treenin otsikko näyttää erikseen valmiit liikkeet ja kuitatut sarjat. Palkissa ei ole harhaanjohtavaa vihreää päätepistettä. Liikkeet numeroidaan harjoituksen järjestyksen mukaan: saman kirjastoliikkeen eri esiintymät erottuvat toisistaan, mutta aktiivista WorkoutExercise-tunnistetta ei näytetä suljetuissa listoissa.
+
+Yhden mittapisteen Kehitys-näkymä näyttää arvon ja ajankohdan ilman kuvaajaa tai pisteiden selauspainikkeita. Kahdesta pisteestä alkaen näkyy kuvaaja, kosketettava pistevalinta ja näppäimistöllä/ruudunlukijalla käytettävät selauspainikkeet. Käyttäjän kirjaamia painoja (esimerkiksi 3 kg) ei korjata automaattisesti.
+
+### Laskentakäsitteet
+
+- Kuitattu sarja: Roomiin tallennettu `done=true`-sarja ohittamattomassa liikkeessä. Käyttöliittymän keskeneräinen luonnos ei ole suoritus.
+- Valmis liike: ensimmäiset `target.sets` sarjaa ovat olemassa ja kuitattu, eikä liike ole ohitettu. Pelkkä rivin poisto ei pienennä tavoitetta. Harjoituskohtaisen tavoitteen voi muuttaa liikkeen valikosta; ohjelma ei muutu. Tavoitteen jälkeiset lisäsarjat ovat vapaaehtoisia mutta kuitattuina mukana sarjamäärässä ja tilastoissa.
+- Päättynyt treeni: `status=FINISHED`; myös osittainen treeni voidaan päättää. Tämä ei kuittaa puuttuvia sarjoja tai liikkeitä.
+- Edistyminen: valmiit liikkeet / kaikki harjoituksen liikkeet. Ohitetut näytetään erikseen eivätkä ole valmiita. Sarjaluvun nimittäjä sisältää ohittamattomien liikkeiden sarjat tai tavoitemäärän, jos rivejä on poistettu tavoitetta pienemmäksi.
+- Etusivun koonti: viimeisin päättyneeksi merkitty treenikerta lopetusajan perusteella. Kortti ja treeninäkymä käyttävät samaa `summarize`-funktiota, samoja pysyviä tunnisteita ja Roomin reaktiivista Flow-tilaa. Kortin napautus avaa juuri tämän treenin.
+- Kehityspiste: kyseisen liikkeen kuitatut, ohittamattomat sarjat harjoituksessa; mukana myös keskeneräiset mutta ei perutut harjoitukset. Päivä ja kellonaika ovat harjoituksen käyttäjän korjattavasta aloitusajasta. Ei erillistä vanhenevaa tilastovälimuistia.
+
+Vanha kenttäluonnos ei peitä myöhemmin korjattua tietokannan arvoa. Jos tallennettu arvo ja aiempi luonnos eroavat, vanha syöte säilyy palautettavaksi sarjavalikosta. Tallennusta odottava syöte on merkitty erikseen. V1.1:n käyttöliittymäasetukset luetaan edelleen; Room-skeema ja varmuuskopioformaatti eivät muutu.
+
 ## Käyttöliittymä v1.1
 
 Etusivulla on yksi seuraavan päivän aloituspainike, muiden päivien valitsin sekä keskeneräisten ja viimeisimmän valmistuneen treenin yhteenveto. Liikekirjastossa on tiiviit rivit, lihasryhmävalinnat ja toimintovalikot. Ohjelmasta muokataan yhtä päivää kerrallaan.
@@ -63,7 +80,7 @@ Release suoritetaan vain main-haaralla onnistuneen tarkistuksen jälkeen. Pysyv�
 
 VersionCode varataan GitHubin pysyvään `build-N`-tagiin ennen rakennusta. Yhteinen concurrency-lukko kattaa koko tarkistus- ja julkaisuprosessin. Vanhentuneen main-commitin julkaisu estetään. Uudelleenajo varaa uuden numeron, epäonnistuminen jättää aukon, eikä laskuri riipu työnkulun nimestä tai kellosta. **Älä poista tai siirrä `build-*`-tageja.** GitHub voi korvata jonossa odottavan ajon uudemmalla main-pushilla; käynnissä olevaa julkaisua ei keskeytetä. Uusimman ajon lähdekoodi sisältää aiemmat muutokset.
 
-VersionName käyttää käyttöliittymäversiosta v1.1 lähtien muotoa `1.1.N` ja kasvaa versionCode-varauksen mukaan (versionCode 3 vastaa versiota 1.1.0). Rakennuksen jälkeen `apksigner` tarkistaa allekirjoituksen ja `aapt` pakettitunnuksen, version ja debug-lipun. Edellisen julkaistun APK:n sertifikaattiin ja versionCodeen verrataan ennen julkaisua. Vasta sitten syntyy `v1.0.N`-tagi ja **OMA-SALI-v1.0.N.apk** GitHub Releaseen. Työnkulku ei tee main-committeja eikä käynnistä itseään.
+VersionName käyttää v1.2-päivityksestä lähtien muotoa `1.2.N` ja kasvaa versionCode-varauksen mukaan (versionCode 4 vastaa versiota 1.2.0). Rakennuksen jälkeen `apksigner` tarkistaa allekirjoituksen ja `aapt` pakettitunnuksen, version ja debug-lipun. Edellisen julkaistun APK:n sertifikaattiin ja versionCodeen verrataan ennen julkaisua. Vasta sitten syntyy `v1.0.N`-tagi ja **OMA-SALI-v1.0.N.apk** GitHub Releaseen. Työnkulku ei tee main-committeja eikä käynnistä itseään.
 
 ## Asennus ja päivitys puhelimeen
 

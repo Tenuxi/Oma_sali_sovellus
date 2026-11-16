@@ -9,8 +9,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 
 @Serializable data class StatsSelection(val section: String = "exercises", val exerciseId: String? = null, val metric: String = "weight", val months: Int = 0, val fixedWeight: String = "")
-@Serializable data class SetDraft(val weight: String, val reps: String, val body: String, val added: String, val assistance: String, val done: Boolean) {
-    constructor(s: WorkoutSet) : this(kg(s.grams), "${s.reps}", s.body?.let(::kg) ?: "", kg(s.added), kg(s.assistance), s.done)
+@Serializable data class SetDraft(val weight: String, val reps: String, val body: String, val added: String, val assistance: String, val done: Boolean, val base: WorkoutSet? = null) {
+    constructor(s: WorkoutSet) : this(kg(s.grams), "${s.reps}", s.body?.let(::kg) ?: "", kg(s.added), kg(s.assistance), s.done, s)
     fun applyTo(s: WorkoutSet, load: Load): WorkoutSet {
         val n = reps.toInt(); require(n in 0..1000 && (!done || n > 0))
         val b = if (load == Load.EXTERNAL) null else body.takeIf { it.isNotBlank() }?.let(::grams)
@@ -27,7 +27,6 @@ class UiStateStore(private val store: DataStore<Preferences>) {
     suspend fun read(): UiState = store.data.first()[key]?.let { codec.decodeFromString<UiState>(it) } ?: UiState()
     suspend fun save(state: UiState) { store.edit { it[key] = codec.encodeToString(state) } }
 }
-fun isComplete(e: WorkoutExercise) = !e.skipped && e.sets.isNotEmpty() && e.sets.all { it.done }
 fun initialOpen(s: WorkoutSession, saved: String?): String? = when {
     saved == "summary" -> null
     s.exercises.any { it.id == saved } -> saved
@@ -43,3 +42,6 @@ fun newRecordSummary(session: WorkoutSession, history: List<WorkoutSession>): St
         if (old != null && best > old) "Uusi painoennätys: ${e.exercise.name} ${kg(best)} kg" else null
     }
 }
+
+// Cached text must not silently shadow a later history correction or a restored record.
+fun isDraftCurrent(draft: SetDraft, stored: WorkoutSet, load: Load): Boolean = draft.base == stored || runCatching { draft.applyTo(stored, load) == stored }.getOrDefault(false)

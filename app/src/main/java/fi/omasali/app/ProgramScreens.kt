@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
     var details by remember { mutableStateOf<Exercise?>(null) }
     var deleting by remember { mutableStateOf<Exercise?>(null) }
     val exercises = rows.values<Exercise>("exercise")
-    OutlinedTextField(query, { query = it }, placeholder = { Text("Hae liikettä…") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+    CompactInput(query, "Hae liikettä…", Modifier.fillMaxWidth()) { query = it }
     ChipStrip {
         (listOf("") + exercises.map { it.muscle }.distinct().sorted()).forEach { m -> FilterChip(muscle == m, { muscle = m }, label = { Text(m.ifEmpty { "Kaikki" }) }) }
     }
@@ -53,7 +53,7 @@ import androidx.compose.ui.Modifier
     }
     Page("Muokkaa ohjelmaa") {
         Row {
-            Text(p.name, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
+            Text(p.name, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
             MoreMenu("Ohjelman toiminnot", listOf(MenuAction("Nimeä ohjelma") { rename = true }, MenuAction("Lisää päivä") { dayEdit = ProgramDay(name = "") }))
         }
         if (p.days.isEmpty()) Action("Lisää ensimmäinen treenipäivä") { dayEdit = ProgramDay(name = "") }
