@@ -29,6 +29,15 @@ class CompactUiTest {
         app.deleteDatabase("oma-sali.db")
         vm = SaliViewModel(app)
     }
+    private fun awaitUi(condition: () -> Boolean) {
+        compose.waitUntil(10000) {
+            // Room invalidations resume on Android's paused main looper, outside Compose's clock.
+            org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+            compose.waitForIdle()
+            assertNull(vm.error)
+            condition()
+        }
+    }
     private fun screenshot(name: String) {
         val directory = File("build/reports/ui").apply { mkdirs() }
         File(directory,"$name.png").outputStream().use { compose.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG,100,it) }
@@ -52,13 +61,13 @@ class CompactUiTest {
                 }
             }
         }
-        compose.waitUntil(10000) { vm.ready }
+        awaitUi { vm.ready }
         runBlocking {
             vm.repo.template(3)
             val p=vm.repo.all().first { it.kind=="program" }.value<TrainingProgram>()
             pid=p.id; sid=vm.repo.start(p.id,p.days.first().id)
         }
-        compose.waitUntil(10000) { vm.rows.value.any { it.id==sid } }
+        awaitUi { vm.rows.value.any { it.id==sid } }
         compose.onNodeWithText("▶  Aloita treeni").assertExists()
         screenshot("01-home-dark")
         compose.runOnIdle { scene="library" }
@@ -72,7 +81,7 @@ class CompactUiTest {
         compose.onNodeWithContentDescription("Sarja 1: paino kg").performTextReplacement("62,5")
         compose.onNodeWithContentDescription("Sarja 1: toistot").performTextReplacement("12")
         compose.onNodeWithContentDescription("Sarja 1 tehty").performClick()
-        compose.waitUntil(10000) { vm.rows.value.first { it.id==sid }.value<WorkoutSession>().exercises.first().sets.first().done }
+        awaitUi { vm.rows.value.first { it.id==sid }.value<WorkoutSession>().exercises.first().sets.first().done }
         screenshot("02-workout-dark")
         val first=vm.rows.value.first { it.id==sid }.value<WorkoutSession>().exercises.first()
         compose.onNodeWithText("Seuraava liike →").performScrollTo().performClick()

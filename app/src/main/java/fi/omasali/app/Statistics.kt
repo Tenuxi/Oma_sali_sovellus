@@ -47,7 +47,7 @@ fun metricPoints(sessions: List<WorkoutSession>, exerciseId: String, metric: Met
     }
     value?.let { session.started to it }
 }
-private fun number(value: Double) = java.math.BigDecimal.valueOf(value).setScale(2, java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString().replace('.', ',')
+private fun number(value: Double) = java.math.BigDecimal.valueOf(value).setScale(3, java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString().replace('.', ',')
 @Composable fun Chart(title: String, points: List<Pair<Long, Double>>, unit: String) {
     Text(title, style = MaterialTheme.typography.titleMedium)
     if (points.isEmpty()) { Text("Ei kirjattuja suorituksia valitulla aikavälillä."); return }
