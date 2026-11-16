@@ -120,9 +120,14 @@ fun <T> List<T>.move(index: Int, delta: Int): List<T> = toMutableList().apply { 
         if (library) ExerciseLibrary(vm, rows) else {
             Action("Uusi oma ohjelma") { create = true }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { Button(onClick = { vm.run { vm.repo.template(2) } }) { Text("2-jakoinen") }; Button(onClick = { vm.run { vm.repo.template(3) } }) { Text("3-jakoinen") } }
-            rows.values<TrainingProgram>("program").forEach { p -> CardBlock {
+            val orderedPrograms = rows.values<TrainingProgram>("program").sortedBy { p -> settings.programOrder.indexOf(p.id).takeIf { it >= 0 } ?: Int.MAX_VALUE }
+            orderedPrograms.forEachIndexed { pi, p -> CardBlock {
                 Text(p.name, style = MaterialTheme.typography.titleLarge)
                 Text("${p.days.size} treenipäivää")
+                Row {
+                    TextButton(onClick = { vm.run { vm.repo.settings { it.copy(programOrder = orderedPrograms.map { program -> program.id }.move(pi, -1)) } } }) { Text("Siirrä ylös") }
+                    TextButton(onClick = { vm.run { vm.repo.settings { it.copy(programOrder = orderedPrograms.map { program -> program.id }.move(pi, 1)) } } }) { Text("Siirrä alas") }
+                }
                 Action("Muokkaa") { open(p.id) }
                 TextButton(onClick = { vm.run { vm.repo.settings { it.copy(activeProgram = p.id) } } }) { Text(if (settings.activeProgram == p.id) "✓ Aktiivinen ohjelma" else "Aseta aktiiviseksi") }
                 Confirm("Poista ohjelma", "Treenihistoria säilyy. Ohjelman poistomerkintä sisältyy varmuuskopioihin.") { vm.run { vm.repo.delete(p.id) } }

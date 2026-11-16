@@ -49,7 +49,7 @@ fun validateRecords(records: List<Record>) {
             }
             "session" -> r.value<WorkoutSession>().also { require(it.id == r.id); validateSession(it) }
             "weight" -> r.value<BodyWeightEntry>().also { require(it.id == r.id && it.time > 0 && it.grams > 0); weight(it.grams) }
-            "settings" -> { require(r.id == "settings" && !r.deleted); r.value<Settings>() }
+            "settings" -> { require(r.id == "settings" && !r.deleted); r.value<Settings>().also { unique(it.programOrder); require(it.activeProgram == null || validId(it.activeProgram)) } }
             else -> error("Tuntematon tietuetyyppi: ${r.kind}")
         }
     }

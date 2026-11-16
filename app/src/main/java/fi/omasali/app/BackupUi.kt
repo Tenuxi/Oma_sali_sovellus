@@ -30,6 +30,13 @@ fun recordLabel(r: Record): String = when (r.kind) {
     "weight" -> r.value<BodyWeightEntry>().let { "Punnitus ${date(it.time)}" }
     else -> "Asetukset"
 } + if (r.deleted) " (poistettu)" else ""
+fun recordDetails(r: Record): String = when (r.kind) {
+    "exercise" -> r.value<Exercise>().let { "${it.name} · ${it.muscle} · ${it.equipment}\n${loadLabel(it.load)} · korotus ${kg(it.increment)} kg\nKuva: ${if (it.photo == null) "ei" else "kyllä"}\n${it.notes}" }
+    "program" -> r.value<TrainingProgram>().let { p -> p.name + "\n" + p.days.joinToString("\n") { d -> d.name + "\n" + d.exercises.joinToString("\n") { "${it.exerciseId}: ${it.sets} × ${it.low}–${it.high} ${it.notes}" } } }
+    "session" -> r.value<WorkoutSession>().let { s -> "${s.programName} · ${s.dayName}\n${date(s.started)} – ${s.ended?.let(::date) ?: "kesken"}\n${s.notes}\n" + s.exercises.joinToString("\n") { e -> e.exercise.name + (if (e.skipped) " (ohitettu)" else "") + "\n" + e.sets.joinToString("\n") { setSummary(it, e.exercise.load) + (if (it.done) " ✓" else " (kesken)") } + "\n" + e.notes } }
+    "weight" -> r.value<BodyWeightEntry>().let { "${date(it.time)} · ${kg(it.grams)} kg" }
+    else -> r.value<Settings>().let { "Tumma teema: ${it.dark}\nNäyttö päällä: ${it.keepScreen}\nAktiivinen ohjelma: ${it.activeProgram ?: "ei"}" }
+}
 @Composable fun SettingsScreen(vm: SaliViewModel, settings: Settings) {
     val context = LocalContext.current
     var pending by remember { mutableStateOf<ImportPreview?>(null) }; var choices by remember { mutableStateOf<Map<String, Boolean>>(emptyMap()) }
@@ -72,7 +79,7 @@ fun recordLabel(r: Record): String = when (r.kind) {
                     Text("Varmuuskopio: ${recordLabel(item.incoming)}")
                     var details by remember(item.incoming.id) { mutableStateOf(false) }
                     TextButton(onClick = { details = !details }) { Text("Näytä versioiden tiedot") }
-                    if (details) { Text("Nykyinen:\n${item.current.payload}"); Text("Varmuuskopio:\n${item.incoming.payload}") }
+                    if (details) { Text("Nykyinen:\n${recordDetails(item.current)}"); Text("Varmuuskopio:\n${recordDetails(item.incoming)}") }
                     Row { FilterChip(choices[item.incoming.id] == false, { choices = choices + (item.incoming.id to false) }, label = { Text("Nykyinen") }); Spacer(Modifier.width(8.dp)); FilterChip(choices[item.incoming.id] == true, { choices = choices + (item.incoming.id to true) }, label = { Text("Varmuuskopio") }) }
                 }
             } }

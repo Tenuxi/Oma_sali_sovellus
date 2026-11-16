@@ -18,7 +18,7 @@ val codec = Json { encodeDefaults = true; ignoreUnknownKeys = false }
 @Serializable enum class Status { ACTIVE, FINISHED, CANCELLED }
 @Serializable data class WorkoutSession(val id: String = id(), val programId: String, val programName: String, val dayId: String, val dayName: String, val started: Long, val ended: Long? = null, val status: Status = Status.ACTIVE, val exercises: List<WorkoutExercise>, val notes: String = "", val cycleOrder: Long, val cycleDays: List<String>)
 @Serializable data class BodyWeightEntry(val id: String = id(), val grams: Long, val time: Long)
-@Serializable data class Settings(val dark: Boolean = true, val keepScreen: Boolean = true, val activeProgram: String? = null)
+@Serializable data class Settings(val dark: Boolean = true, val keepScreen: Boolean = true, val activeProgram: String? = null, val programOrder: List<String> = emptyList())
 @Serializable data class BackupMetadata(val format: Int = 1, val created: Long = System.currentTimeMillis(), val applicationId: String = "fi.omasali.app")
 // Revision ancestry makes imports independent of wall-clock accuracy. Tombstones are never dropped.
 @Serializable data class Record(val id: String, val kind: String, val payload: String, val revision: String = id(), val ancestors: Set<String> = emptySet(), val deleted: Boolean = false)
