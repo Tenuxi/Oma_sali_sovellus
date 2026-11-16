@@ -1,0 +1,89 @@
+name: Android verification and release
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: android-${{ github.event_name == 'pull_request' && github.ref || 'release' }}
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Unit, persistence and backup tests; lint; installable debug build
+        run: ./gradlew testDebugUnitTest lintDebug assembleDebug --stacktrace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verification-reports
+          path: |
+            app/build/reports
+            app/schemas
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OMA-SALI-debug-development-only
+          path: app/build/outputs/apk/debug/app-debug.apk
+  release:
+    needs: verify
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Require permanent signing credentials
+        shell: bash
+        run: |
+          for key in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            if [ -z "${!key}" ]; then
+              echo "::error::Missing permanent signing secret: $key. See docs/SIGNING.md. No release will be published."
+              exit 1
+            fi
+          done
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Reserve monotonically increasing version
+        run: python3 scripts/reserve_version.py
+      - name: Decode persistent release key
+        shell: bash
+        run: |
+          umask 077
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.jks"
+          echo "KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+      - name: Build signed release
+        run: ./gradlew assembleRelease --stacktrace
+      - name: Check signature, identity and update compatibility
+        run: bash scripts/verify_apk.sh
+      - name: Publish verified APK
+        shell: bash
+        run: |
+          gh release create "v$VERSION_NAME" "dist/OMA-SALI-v$VERSION_NAME.apk" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "OMA SALI v$VERSION_NAME" --notes "Allekirjoitettu offline-Android-sovellus. versionCode: $VERSION_CODE. Asenna olemassa olevan OMA SALI -sovelluksen päälle. Ota varmuuskopio ennen päivitystä."
+      - name: Remove decoded key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.jks"
