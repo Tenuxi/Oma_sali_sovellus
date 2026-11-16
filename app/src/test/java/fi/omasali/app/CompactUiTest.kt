@@ -161,7 +161,7 @@ class CompactUiTest {
         compose.onNodeWithTag("single-measurement").assertExists()
         compose.onNodeWithTag("development-chart").assertDoesNotExist()
         compose.onNodeWithText("← Edellinen piste").assertDoesNotExist()
-        compose.onNodeWithTag("chart-card").assertHeightIsAtMost(180.dp)
+        assertTrue("Single measurement card must stay compact", compose.onNodeWithTag("chart-card").fetchSemanticsNode().boundsInRoot.height <= with(compose.density) { 180.dp.toPx() })
         screenshot("09-single-point-320")
         compose.runOnIdle { dark=true; chartPoints=chartPoints+(1_700_086_400_000L to 4.0) }
         compose.onNodeWithTag("development-chart").assertExists().performTouchInput { click(androidx.compose.ui.geometry.Offset(0f,center.y)) }
