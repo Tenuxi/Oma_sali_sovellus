@@ -17,11 +17,11 @@
 ## Varmennus ja julkaisu
 
 - Paikallista Gradle-rakennusta tai emulaattoria ei ajettu käyttäjän ohjeen mukaisesti.
-- GitHub Actions: ensimmäinen varsinainen Gradle-tarkistus onnistui (ajo 43834657430): 9 testiä läpi, lint 0 virhettä, debug-APK rakennettu. SDK-valmistelun vanhentunut tools-oletus korjattiin. Viimeisimmän commitin tulos näkyy [Actionsissa](https://github.com/Tenuxi/Oma_sali_sovellus/actions).
-- Lisätty kuvan/poistomerkinnän palautustesti, kehonpainon historiatestit ja suurten tietueiden migraatiotesti. Ne kuuluvat samaan Actions-tarkistukseen.
+- GitHub Actions: testit, lint-tarkistus ja debug-APK:n rakennus on läpäisty. V2-migraation sisältävä ajo 43835656032 läpäisi kaikki 12 testiä. Viimeisimmän commitin tulos näkyy [Actionsissa](https://github.com/Tenuxi/Oma_sali_sovellus/actions). SDK-valmistelun vanhentunut tools-oletus korjattiin.
+- Lisätty kuvan/poistomerkinnän palautustesti, kehonpainon historiatestit ja suurten tietueiden migraatiotesti. Ne läpäisivät Actions-tarkistuksen. Lisäksi mukana on Unicode-merkkien pilkkomisrajan testi.
 - Release-allekirjoitussalaisuudet puuttuvat repositoriosta (tarkistettu 16.11.2026). Julkaisu ei voi onnistua ennen niiden käyttöönottoa.
 - Fyysisellä laitteella käynnistys, käytettävyys ja APK:n päivitysasennus: ei vielä testattu.
-- Room v2 pilkkoo suuret aggregaatit turvallisiin osiin. V1 → v2 -migraatio ja yli 2 Mt tietueen säilymistesti on toteutettu. Alkuperäinen v1-skeema on versionhallinnassa.
+- Room v2 pilkkoo suuret aggregaatit turvallisiin osiin. V1 → v2 -migraatio ja yli 2 Mt tietueen säilymistesti on toteutettu. V1- ja v2-skeemat ovat versionhallinnassa.
 
 ## Avoimet viimeistelyt / rajaukset
 

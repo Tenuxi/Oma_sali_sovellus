@@ -11,7 +11,19 @@ import kotlinx.serialization.encodeToString
 const val CHUNK_CHARS = 64000
 @Entity(tableName = "record_chunks", primaryKeys = ["recordId", "part"])
 data class StoredRecord(val recordId: String, val part: Int, val json: String)
-fun encodeRows(record: Record) = codec.encodeToString(record).chunked(CHUNK_CHARS).mapIndexed { i, text -> StoredRecord(record.id, i, text) }
+fun encodeRows(record: Record): List<StoredRecord> {
+    val text = codec.encodeToString(record)
+    val rows = mutableListOf<StoredRecord>()
+    var start = 0
+    while (start < text.length) {
+        var end = (start + CHUNK_CHARS).coerceAtMost(text.length)
+        // SQLite encodes each cell as UTF-8: do not split an emoji's UTF-16 surrogate pair.
+        if (end < text.length && text[end - 1].isHighSurrogate() && text[end].isLowSurrogate()) end--
+        rows += StoredRecord(record.id, rows.size, text.substring(start, end))
+        start = end
+    }
+    return rows
+}
 fun decodeRows(rows: List<StoredRecord>): List<Record> = rows.groupBy { it.recordId }.map { (_, parts) ->
     val sorted = parts.sortedBy { it.part }
     require(sorted.map { it.part } == sorted.indices.toList()) { "Tietokannan tietue on puutteellinen" }

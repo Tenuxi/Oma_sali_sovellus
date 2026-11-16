@@ -6,6 +6,16 @@ import org.junit.Test
 class DomainTest {
     private val e = Exercise(name = "Penkki")
     private fun exercise(load: Load = Load.EXTERNAL) = WorkoutExercise(exercise = e.copy(load = load), target = ProgramExercise(exerciseId = e.id), sets = List(3) { WorkoutSet(grams = 60000, reps = 12, done = true) })
+    @Test fun chunkBoundaryPreservesEmoji() {
+        val r = Record(id = "emoji", kind = "exercise", payload = "🙂")
+        val prefix = codec.encodeToString(Record.serializer(), r).indexOf("🙂")
+        assertTrue(prefix >= 0)
+        val large = r.copy(payload = "a".repeat(CHUNK_CHARS - 1 - prefix) + "🙂")
+        val chunks = encodeRows(large)
+        assertEquals(2, chunks.size)
+        assertTrue(chunks.none { it.json.last().isHighSurrogate() })
+        assertEquals(large, decodeRows(chunks).single())
+    }
     @Test fun exactWeights() { assertEquals(62500L, grams("62,5")); assertEquals("62.5", kg(62500)); assertThrows(Exception::class.java) { grams("1.0001") } }
     @Test fun progressionRequiresEveryTargetAtSameWeight() {
         val ex = exercise(); assertEquals("Seuraavaksi 62.5 kg", suggestion(ex))
