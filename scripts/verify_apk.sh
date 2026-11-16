@@ -3,13 +3,7 @@ set -euo pipefail
 build_tools=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)
 apk=app/build/outputs/apk/release/app-release.apk
 "$build_tools/apksigner" verify --verbose --print-certs "$apk" > "$RUNNER_TEMP/new-cert.txt"
-python3 - "$RUNNER_TEMP/new-cert.txt" <<'PYVERIFY'
-from pathlib import Path
-import re, sys
-expected = Path('docs/release-certificate.sha256').read_text().strip().lower()
-actual = re.search(r'Signer #1 certificate SHA-256 digest: ([0-9a-fA-F]+)', Path(sys.argv[1]).read_text())
-assert actual and actual[1].lower() == expected, 'APK does not use the permanent OMA SALI release certificate'
-PYVERIFY
+python3 scripts/verify_certificate.py "$RUNNER_TEMP/new-cert.txt"
 "$build_tools/aapt" dump badging "$apk" > "$RUNNER_TEMP/badging.txt"
 python3 - "$RUNNER_TEMP/badging.txt" <<'PY'
 import os, re, sys
@@ -32,7 +26,7 @@ if [ -n "$previous" ]; then
   gh release download "$previous" --repo "$GITHUB_REPOSITORY" --pattern 'OMA-SALI-*.apk' --dir "$RUNNER_TEMP/previous"
   old_apk=$(find "$RUNNER_TEMP/previous" -name '*.apk' -print -quit)
   "$build_tools/apksigner" verify --print-certs "$old_apk" > "$RUNNER_TEMP/old-cert.txt"
-  diff <(grep 'Signer #1 certificate SHA-256 digest:' "$RUNNER_TEMP/old-cert.txt") <(grep 'Signer #1 certificate SHA-256 digest:' "$RUNNER_TEMP/new-cert.txt")
+  python3 scripts/verify_certificate.py "$RUNNER_TEMP/old-cert.txt"
   "$build_tools/aapt" dump badging "$old_apk" > "$RUNNER_TEMP/old-badging.txt"
   python3 - "$RUNNER_TEMP/old-badging.txt" <<'PY'
 import os, re, sys
