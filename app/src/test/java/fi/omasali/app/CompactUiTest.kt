@@ -130,11 +130,11 @@ class CompactUiTest {
         awaitUi { vm.rows.value.first { it.id==sid }.value<WorkoutSession>().status==Status.FINISHED }
         compose.runOnIdle { scene="home"; dark=true }
         compose.onNodeWithTag("last-workout-$sid").assertExists()
-        compose.onNodeWithTag("last-workout-counts").assertTextEquals("0/3 liikettä valmiina · 2 sarjaa tehty")
+        compose.onNodeWithTag("last-workout-counts", useUnmergedTree = true).assertTextEquals("0/3 liikettä valmiina · 2 sarjaa tehty")
         screenshot("06-home-partial-finished")
         compose.runOnIdle { vm.session(sid) { s -> s.copy(exercises=s.exercises.mapIndexed { i,e -> if(i==0) e.copy(sets=e.sets.mapIndexed { n,set -> if(n==1) set.copy(done=false) else set }) else e }) } }
         awaitUi { summarize(vm.rows.value.first { it.id==sid }.value<WorkoutSession>()).completedSets==1 }
-        compose.onNodeWithTag("last-workout-counts").assertTextEquals("0/3 liikettä valmiina · 1 sarjaa tehty")
+        compose.onNodeWithTag("last-workout-counts", useUnmergedTree = true).assertTextEquals("0/3 liikettä valmiina · 1 sarjaa tehty")
         compose.runOnIdle {
             vm.session(sid) { s -> s.copy(exercises=s.exercises.mapIndexed { i,e -> when(i) {
                 0 -> e.copy(sets=e.sets.mapIndexed { n,set -> if(n==1) set.copy(done=true) else set })
