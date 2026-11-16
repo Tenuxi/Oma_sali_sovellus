@@ -7,7 +7,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.activity.ComponentActivity
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.runBlocking
 import org.junit.*
@@ -22,7 +23,7 @@ import java.io.File
 @Config(sdk = [35], qualifiers = "w360dp-h800dp")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class CompactUiTest {
-    @get:Rule val compose = createComposeRule()
+    @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
     private lateinit var vm: SaliViewModel
     private val app: Application get() = ApplicationProvider.getApplicationContext()
     @Before fun setup() {
@@ -40,7 +41,16 @@ class CompactUiTest {
     }
     private fun screenshot(name: String) {
         val directory = File("build/reports/ui").apply { mkdirs() }
-        File(directory,"$name.png").outputStream().use { compose.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG,100,it) }
+        // PixelCopy waits for a hardware frame that Robolectric doesn't schedule. Draw the
+        // actual laid-out Android/Compose view into a native bitmap instead.
+        lateinit var bitmap: Bitmap
+        compose.runOnIdle {
+            val view = compose.activity.findViewById<android.view.View>(android.R.id.content)
+            bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+            view.draw(android.graphics.Canvas(bitmap))
+        }
+        File(directory,"$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG,100,it) }
+        bitmap.recycle()
     }
     @Test fun compactScreensAndSetEntrySurviveExerciseSwitch() {
         var scene by mutableStateOf("home")
