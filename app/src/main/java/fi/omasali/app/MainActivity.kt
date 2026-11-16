@@ -20,10 +20,13 @@ class SaliViewModel(app: Application) : AndroidViewModel(app) {
     val rows = repo.records.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
     var error by mutableStateOf<String?>(null)
     var ready by mutableStateOf(false)
+    var ui by mutableStateOf(UiState())
+        private set
+    private val uiStore = UiStateStore(app.preferences)
     private val commands = Channel<suspend () -> Unit>(Channel.UNLIMITED)
     init {
         viewModelScope.launch(Dispatchers.IO) {
-            try { repo.initialize(); withContext(Dispatchers.Main) { ready = true } }
+            try { repo.initialize(); val saved = uiStore.read(); withContext(Dispatchers.Main) { ui = saved; ready = true } }
             catch (e: Exception) { withContext(Dispatchers.Main) { error = "Tietokantaa ei voitu avata: ${e.message}" } }
             for (command in commands) try { command() } catch (e: Exception) {
                 if (e is CancellationException) throw e
@@ -32,6 +35,19 @@ class SaliViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
     fun run(block: suspend () -> Unit) { commands.trySend(block) }
+    fun updateUi(change: (UiState) -> UiState) {
+        ui = change(ui)
+        val snapshot = ui
+        run { uiStore.save(snapshot) }
+    }
+    fun openExercise(sessionId: String, exerciseId: String?) = updateUi { it.copy(opened = it.opened + (sessionId to (exerciseId ?: "summary"))) }
+    fun stats(change: (StatsSelection) -> StatsSelection) = updateUi { it.copy(stats = change(it.stats)) }
+    fun editSet(sessionId: String, exerciseId: String, set: WorkoutSet, load: Load, draft: SetDraft) {
+        // Draft text survives collapsing, navigation and process recreation, including partial input.
+        updateUi { it.copy(drafts = it.drafts + (set.id to draft)) }
+        val updated = runCatching { draft.applyTo(set, load) }.getOrNull() ?: return
+        exercise(sessionId, exerciseId) { e -> e.copy(sets = e.sets.map { if (it.id == set.id) updated else it }) }
+    }
     fun save(r: Record) = run { repo.save(r) }
     fun program(id: String, f: (TrainingProgram) -> TrainingProgram) = run { repo.updateProgram(id, f) }
     fun session(id: String, f: (WorkoutSession) -> WorkoutSession) = run { repo.updateSession(id, f) }

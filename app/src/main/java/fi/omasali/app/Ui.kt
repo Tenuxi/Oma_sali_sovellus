@@ -38,7 +38,7 @@ fun <T> List<T>.move(index: Int, delta: Int): List<T> = toMutableList().apply { 
     val route = entry?.destination?.route ?: "home"
     val tabs = listOf("home" to "Etusivu", "workouts" to "Treenit", "programs" to "Ohjelmat", "stats" to "Kehitys", "settings" to "Asetukset")
     Scaffold(bottomBar = {
-        NavigationBar { tabs.forEachIndexed { i, (key, title) -> NavigationBarItem(selected = route == key, onClick = { nav.navigate(key) { popUpTo("home"); launchSingleTop = true } }, icon = { Text(listOf("⌂", "●", "≡", "↗", "⚙")[i]) }, label = { Text(title, maxLines = 1) }) } }
+        NavigationBar { tabs.forEachIndexed { i, (key, title) -> NavigationBarItem(selected = route == key || (key == "programs" && route.startsWith("program/")) || (key == "workouts" && route.startsWith("session/")), onClick = { nav.navigate(key) { popUpTo("home"); launchSingleTop = true } }, icon = { Text(listOf("⌂", "●", "≡", "↗", "⚙")[i]) }, label = { Text(title, maxLines = 1) }) } }
     }) { padding ->
         Box(Modifier.padding(padding)) {
             NavHost(navController = nav, startDestination = "home") {
@@ -53,11 +53,15 @@ fun <T> List<T>.move(index: Int, delta: Int): List<T> = toMutableList().apply { 
         }
     }
 }
-@Composable fun Page(title: String, content: @Composable ColumnScope.() -> Unit) {
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp).widthIn(max = 800.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+@Composable fun Page(title: String, scrollKey: Any? = null, content: @Composable ColumnScope.() -> Unit) {
+    val pageScroll = rememberScrollState()
+    LaunchedEffect(scrollKey) { if (scrollKey != null) pageScroll.scrollTo(0) }
+    Box(Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.TopCenter) {
+    Column(Modifier.widthIn(max = 800.dp).fillMaxWidth().verticalScroll(pageScroll).imePadding().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(title, style = MaterialTheme.typography.headlineMedium)
         content()
         Spacer(Modifier.height(24.dp))
+    }
     }
 }
 @Composable fun CardBlock(content: @Composable ColumnScope.() -> Unit) {
@@ -77,29 +81,6 @@ fun <T> List<T>.move(index: Int, delta: Int): List<T> = toMutableList().apply { 
             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         }
     }, confirmButton = { TextButton(onClick = { try { save(fields); close() } catch (e: Exception) { error = e.message ?: "Tarkista kentät" } }) { Text("Tallenna") } }, dismissButton = { TextButton(onClick = close) { Text("Peruuta") } })
-}
-@Composable fun Home(vm: SaliViewModel, rows: List<Record>, settings: Settings, open: (String) -> Unit) {
-    val programs = rows.values<TrainingProgram>("program")
-    val sessions = rows.values<WorkoutSession>("session")
-    val active = programs.find { it.id == settings.activeProgram } ?: programs.firstOrNull()
-    Page("OMA SALI") {
-        Text("Oma tahti. Oma kehitys.", style = MaterialTheme.typography.titleMedium)
-        if (active == null) Text("Luo ensin ohjelma Ohjelmat-välilehdellä.")
-        active?.let { p ->
-            CardBlock {
-                Text(p.name, style = MaterialTheme.typography.titleLarge)
-                val next = nextDay(p, sessions)
-                Text("Seuraava treeni: ${next?.name ?: "Lisää ohjelmaan treenipäivä"}")
-                p.days.forEach { day -> Action(if (day.id == next?.id) "Aloita ${day.name} · seuraava" else "Aloita ${day.name}", day.exercises.isNotEmpty()) {
-                    vm.run { val sid = vm.repo.start(p.id, day.id); withContext(Dispatchers.Main) { open(sid) } }
-                } }
-            }
-        }
-        Text("Keskeneräiset", style = MaterialTheme.typography.titleLarge)
-        val ongoing = sessions.filter { it.status == Status.ACTIVE }.sortedByDescending { it.started }
-        if (ongoing.isEmpty()) Text("Ei keskeneräisiä treenejä.")
-        ongoing.forEach { s -> Action("Jatka: ${s.dayName} · ${date(s.started)}") { open(s.id) } }
-    }
 }
 @Composable fun Workouts(rows: List<Record>, open: (String) -> Unit) {
     Page("Treenit") {
@@ -135,19 +116,6 @@ fun <T> List<T>.move(index: Int, delta: Int): List<T> = toMutableList().apply { 
         }
     }
     if (create) EditDialog("Uusi ohjelma", listOf("Nimi"), listOf(""), { create = false }) { v -> require(v[0].isNotBlank()); val p = TrainingProgram(name = v[0]); vm.save(record(p.id, "program", p)) }
-}
-@Composable fun ExerciseLibrary(vm: SaliViewModel, rows: List<Record>) {
-    var query by rememberSaveable { mutableStateOf("") }; var muscle by rememberSaveable { mutableStateOf("") }
-    var edit by remember { mutableStateOf<Exercise?>(null) }
-    OutlinedTextField(query, { query = it }, label = { Text("Hae liikettä") }, modifier = Modifier.fillMaxWidth())
-    OutlinedTextField(muscle, { muscle = it }, label = { Text("Lihasryhmän suodatus") }, modifier = Modifier.fillMaxWidth())
-    Action("Lisää oma liike tai laite") { edit = Exercise(name = "") }
-    rows.values<Exercise>("exercise").filter { it.name.contains(query, true) && it.muscle.contains(muscle, true) }.sortedBy { it.name }.forEach { e -> CardBlock {
-        Text(e.name, style = MaterialTheme.typography.titleMedium); Text("${e.muscle} · ${loadLabel(e.load)}")
-        TextButton(onClick = { edit = e }) { Text("Muokkaa") }
-        Confirm("Poista liike", "Poista liike ensin ohjelmien päivistä. Historialliset suoritukset ja kuvat säilyvät.") { vm.run { vm.repo.delete(e.id) } }
-    } }
-    edit?.let { e -> ExerciseDialog(e, { edit = null }) { updated -> vm.save(record(updated.id, "exercise", updated)); edit = null } }
 }
 fun loadLabel(load: Load) = when (load) { Load.EXTERNAL -> "Ulkoinen paino"; Load.BODY -> "Kehonpaino"; Load.ASSISTED -> "Lisäpaino / avustus" }
 @Composable fun ExerciseDialog(exercise: Exercise, close: () -> Unit, save: (Exercise) -> Unit) {
@@ -197,134 +165,8 @@ fun loadLabel(load: Load) = when (load) { Load.EXTERNAL -> "Ulkoinen paino"; Loa
         } }
     }, confirmButton = { TextButton(onClick = close) { Text("Sulje") } })
 }
-@Composable fun ProgramEditor(vm: SaliViewModel, rows: List<Record>, id: String) {
-    val p = rows.find { it.id == id && !it.deleted }?.value<TrainingProgram>() ?: return
-    var rename by remember { mutableStateOf(false) }; var dayEdit by remember { mutableStateOf<ProgramDay?>(null) }
-    var addTo by remember { mutableStateOf<String?>(null) }; var targetEdit by remember { mutableStateOf<Pair<String, ProgramExercise>?>(null) }
-    Page(p.name) {
-        TextButton(onClick = { rename = true }) { Text("Nimeä ohjelma") }
-        Action("Lisää treenipäivä") { dayEdit = ProgramDay(name = "") }
-        p.days.forEachIndexed { di, d -> CardBlock {
-            Text(d.name, style = MaterialTheme.typography.titleLarge)
-            Row { TextButton(onClick = { dayEdit = d }) { Text("Nimi") }; TextButton(onClick = { vm.program(id) { it.copy(days = it.days.move(di, -1)) } }) { Text("↑") }; TextButton(onClick = { vm.program(id) { it.copy(days = it.days.move(di, 1)) } }) { Text("↓") } }
-            d.exercises.forEachIndexed { ei, target ->
-                val e = rows.find { it.id == target.exerciseId }?.value<Exercise>()
-                Text("${ei + 1}. ${e?.name ?: "Poistettu liike"} · ${target.sets} × ${target.low}–${target.high}")
-                if (target.notes.isNotBlank()) Text(target.notes)
-                Row {
-                    TextButton(onClick = { targetEdit = d.id to target }) { Text("Tavoite") }
-                    TextButton(onClick = { vm.program(id) { p0 -> p0.copy(days = p0.days.map { if (it.id == d.id) it.copy(exercises = it.exercises.move(ei, -1)) else it }) } }) { Text("↑") }
-                    TextButton(onClick = { vm.program(id) { p0 -> p0.copy(days = p0.days.map { if (it.id == d.id) it.copy(exercises = it.exercises.move(ei, 1)) else it }) } }) { Text("↓") }
-                    TextButton(onClick = { vm.program(id) { p0 -> p0.copy(days = p0.days.map { if (it.id == d.id) it.copy(exercises = it.exercises.filterNot { t -> t.id == target.id }) else it }) } }) { Text("Poista") }
-                }
-            }
-            Action("Lisää liike") { addTo = d.id }
-            Confirm("Poista päivä", "Päivä poistetaan ohjelmasta. Treenihistoria säilyy.") { vm.program(id) { it.copy(days = it.days.filterNot { day -> day.id == d.id }) } }
-        } }
-    }
-    if (rename) EditDialog("Ohjelman nimi", listOf("Nimi"), listOf(p.name), { rename = false }) { v -> require(v[0].isNotBlank()); vm.program(id) { it.copy(name = v[0]) } }
-    dayEdit?.let { d -> EditDialog("Treenipäivä", listOf("Nimi"), listOf(d.name), { dayEdit = null }) { v ->
-        require(v[0].isNotBlank()); vm.program(id) { old -> old.copy(days = if (old.days.any { it.id == d.id }) old.days.map { if (it.id == d.id) it.copy(name = v[0]) else it } else old.days + d.copy(name = v[0])) }
-    } }
-    addTo?.let { dayId -> PickExercise(rows, { addTo = null }) { e -> vm.program(id) { old -> old.copy(days = old.days.map { if (it.id == dayId) it.copy(exercises = it.exercises + ProgramExercise(exerciseId = e.id)) else it }) } } }
-    targetEdit?.let { (dayId, t) -> EditDialog("Sarjatavoite", listOf("Sarjat", "Toistot vähintään", "Toistot enintään", "Huomiot"), listOf("${t.sets}", "${t.low}", "${t.high}", t.notes), { targetEdit = null }) { v ->
-        val updated = t.copy(sets = v[0].toInt(), low = v[1].toInt(), high = v[2].toInt(), notes = v[3]); require(updated.sets in 1..30 && updated.low in 1..1000 && updated.high in updated.low..1000)
-        vm.program(id) { old -> old.copy(days = old.days.map { d -> if (d.id == dayId) d.copy(exercises = d.exercises.map { if (it.id == t.id) updated else it }) else d }) }
-    } }
-}
-@Composable fun WorkoutEditor(vm: SaliViewModel, rows: List<Record>, settings: Settings, sessionId: String) {
-    val s = rows.find { it.id == sessionId }?.value<WorkoutSession>() ?: return
-    val context = LocalContext.current
-    DisposableEffect(settings.keepScreen, s.status) {
-        val window = (context as? Activity)?.window
-        if (settings.keepScreen && s.status == Status.ACTIVE) window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        onDispose { window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
-    }
-    var add by remember { mutableStateOf(false) }; var replace by remember { mutableStateOf<String?>(null) }
-    var info by remember { mutableStateOf(false) }; var notes by remember { mutableStateOf<WorkoutExercise?>(null) }
-    Page(s.dayName) {
-        Text("${s.programName} · ${date(s.started)}")
-        Text(if (s.status == Status.ACTIVE) "Kesken · muutokset tallentuvat automaattisesti" else if (s.status == Status.CANCELLED) "Peruttu" else "Valmis · voit korjata tietoja")
-        TextButton(onClick = { info = true }) { Text("Ajankohta ja muistiinpanot") }
-        if (s.notes.isNotBlank()) Text(s.notes)
-        if (s.status != Status.CANCELLED) {
-            s.exercises.forEachIndexed { index, ex -> key(ex.id) { CardBlock {
-                Text(ex.exercise.name, style = MaterialTheme.typography.titleLarge)
-                Text("Tavoite ${ex.target.sets} × ${ex.target.low}–${ex.target.high} · ${loadLabel(ex.exercise.load)}")
-                if (ex.target.notes.isNotBlank()) Text(ex.target.notes)
-                if (ex.notes.isNotBlank()) Text(ex.notes)
-                Photo(ex.exercise.photo)
-                val previous = rows.values<WorkoutSession>("session").filter { it.id != s.id && it.status != Status.CANCELLED && it.started <= s.started }.sortedByDescending { it.started }.firstNotNullOfOrNull { session -> session.exercises.firstOrNull { it.exercise.id == ex.exercise.id && it.exercise.load == ex.exercise.load && !it.skipped && it.sets.any { set -> set.done } } }
-                if (previous != null) {
-                    Text("Edellinen: " + previous.sets.filter { it.done }.joinToString(" · ") { setSummary(it, previous.exercise.load) })
-                    suggestion(previous)?.let { Text("Ehdotus: $it", color = MaterialTheme.colorScheme.primary) }
-                }
-                Row {
-                    TextButton(onClick = { vm.session(s.id) { it.copy(exercises = it.exercises.move(index, -1)) } }) { Text("↑") }
-                    TextButton(onClick = { vm.session(s.id) { it.copy(exercises = it.exercises.move(index, 1)) } }) { Text("↓") }
-                    TextButton(onClick = { notes = ex }) { Text("Huomiot") }
-                    TextButton(onClick = { replace = ex.id }) { Text("Vaihda") }
-                }
-                Row { Checkbox(checked = ex.skipped, onCheckedChange = { value -> vm.exercise(s.id, ex.id) { it.copy(skipped = value) } }); Text("Ohita liike", modifier = Modifier.padding(top = 12.dp)) }
-                if (!ex.skipped) {
-                    ex.sets.forEachIndexed { si, set -> key(set.id) { SetEditor(set, ex.exercise.load, si + 1, { updated -> vm.exercise(s.id, ex.id) { e -> e.copy(sets = e.sets.map { if (it.id == set.id) updated else it }) } }, { vm.exercise(s.id, ex.id) { e -> e.copy(sets = e.sets.filterNot { it.id == set.id }) } }) } }
-                    TextButton(onClick = { vm.exercise(s.id, ex.id) { it.copy(sets = it.sets + WorkoutSet(body = it.sets.lastOrNull()?.body)) } }) { Text("+ Lisää sarja") }
-                    suggestion(ex)?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
-                }
-                Confirm("Poista liike treenistä", "Tämän treenin liike ja sen sarjat poistetaan. Ohjelma ei muutu.") { vm.session(s.id) { it.copy(exercises = it.exercises.filterNot { e -> e.id == ex.id }) } }
-            } } }
-            Action("Lisää liike treeniin") { add = true }
-            if (s.status == Status.ACTIVE) {
-                Action("Lopeta treeni") { vm.session(s.id) { it.copy(status = Status.FINISHED, ended = maxOf(System.currentTimeMillis(), it.started)) } }
-                Text("Voit jättää treenin kesken siirtymällä toiseen näkymään.")
-                Confirm("Peru aloitus", "Treeni merkitään perutuksi ja sen vaikutus kiertoon poistuu. Myöhemmät aloitukset säilyvät.") { vm.session(s.id) { it.copy(status = Status.CANCELLED, ended = null) } }
-            } else Action("Avaa uudelleen keskeneräiseksi") { vm.session(s.id) { it.copy(status = Status.ACTIVE, ended = null) } }
-        }
-    }
-    if (add || replace != null) PickExercise(rows, { add = false; replace = null }) { e ->
-        val replaceId = replace
-        vm.session(s.id) { old ->
-            val target = ProgramExercise(exerciseId = e.id)
-            val new = WorkoutExercise(exercise = e, target = target, sets = List(target.sets) { WorkoutSet() })
-            old.copy(exercises = if (replaceId == null) old.exercises + new else old.exercises.map { if (it.id == replaceId) new else it })
-        }
-    }
-    if (info) EditDialog("Treenin tiedot", listOf("Alku (pp.kk.vvvv tt:mm)", "Loppu (tyhjä = kesken)", "Muistiinpanot"), listOf(date(s.started), s.ended?.let(::date) ?: "", s.notes), { info = false }) { v ->
-        val start = timestamp(v[0]); val end = v[1].takeIf { it.isNotBlank() }?.let(::timestamp); require(end == null || end >= start) { "Loppu on ennen alkua" }
-        vm.session(s.id) { it.copy(started = start, ended = end, notes = v[2], status = if (it.status == Status.CANCELLED) Status.CANCELLED else if (end == null) Status.ACTIVE else Status.FINISHED) }
-    }
-    notes?.let { e -> EditDialog("Liikkeen huomiot", listOf("Huomiot"), listOf(e.notes), { notes = null }) { v -> vm.exercise(s.id, e.id) { it.copy(notes = v[0]) } } }
-}
 fun setSummary(s: WorkoutSet, load: Load) = when (load) {
     Load.EXTERNAL -> "${kg(s.grams)} kg × ${s.reps}"
     Load.BODY -> "${s.reps} toistoa"
     Load.ASSISTED -> "+${kg(s.added)} / −${kg(s.assistance)} kg × ${s.reps}"
-}
-@Composable fun SetEditor(set: WorkoutSet, load: Load, number: Int, save: (WorkoutSet) -> Unit, delete: () -> Unit) {
-    var weight by rememberSaveable(set.id) { mutableStateOf(kg(set.grams)) }; var reps by rememberSaveable(set.id) { mutableStateOf("${set.reps}") }
-    var body by rememberSaveable(set.id) { mutableStateOf(set.body?.let(::kg) ?: "") }; var added by rememberSaveable(set.id) { mutableStateOf(kg(set.added)) }; var assistance by rememberSaveable(set.id) { mutableStateOf(kg(set.assistance)) }
-    var invalid by remember { mutableStateOf(false) }
-    var checked by rememberSaveable(set.id) { mutableStateOf(set.done) }
-    fun persist(done: Boolean = checked) {
-        try {
-            val r = reps.toInt(); require(r in 0..1000 && (!done || r > 0))
-            val update = set.copy(grams = grams(weight), reps = r, body = body.takeIf { it.isNotBlank() }?.let(::grams), added = grams(added), assistance = grams(assistance), done = done)
-            require(update.body == null || update.body > 0); require(update.added == 0L || update.assistance == 0L)
-            invalid = false; checked = done; save(update)
-        } catch (_: Exception) { invalid = true }
-    }
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text("Sarja $number", style = MaterialTheme.typography.labelLarge)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (load == Load.EXTERNAL) OutlinedTextField(weight, { weight = it; persist() }, label = { Text("kg") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
-            OutlinedTextField(reps, { reps = it; persist() }, label = { Text("Toistot") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true)
-        }
-        if (load != Load.EXTERNAL) OutlinedTextField(body, { body = it; persist() }, label = { Text("Kehonpaino kg (valinnainen)") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
-        if (load == Load.ASSISTED) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedTextField(added, { added = it; persist() }, label = { Text("Lisäpaino kg") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
-            OutlinedTextField(assistance, { assistance = it; persist() }, label = { Text("Avustus kg") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
-        }
-        Row { Checkbox(checked, { persist(it) }); Text("Tehty", Modifier.padding(top = 12.dp)); Spacer(Modifier.weight(1f)); TextButton(onClick = delete) { Text("Poista sarja") } }
-        if (invalid) Text("Tarkista luvut. Virheellistä arvoa ei tallennettu. Käytä joko lisäpainoa tai avustusta.", color = MaterialTheme.colorScheme.error)
-    }
 }

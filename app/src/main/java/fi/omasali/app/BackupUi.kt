@@ -85,7 +85,7 @@ fun recordDetails(r: Record): String = when (r.kind) {
             } }
             Action("Vahvista yhdistäminen", !busy && p.items.filter { it.type == MergeType.CONFLICT }.all { it.incoming.id in choices }) {
                 busy = true
-                vm.run { try { vm.repo.merge(p.baseline, p.backup, choices); withContext(Dispatchers.Main) { pending = null; message = "Varmuuskopio yhdistetty turvallisesti." } } finally { withContext(Dispatchers.Main) { busy = false } } }
+                vm.run { try { vm.repo.merge(p.baseline, p.backup, choices); withContext(Dispatchers.Main) { pending = null; vm.updateUi { it.copy(drafts = emptyMap()) }; message = "Varmuuskopio yhdistetty turvallisesti." } } finally { withContext(Dispatchers.Main) { busy = false } } }
             }
             TextButton(onClick = { pending = null }, enabled = !busy) { Text("Peruuta palautus") }
         }

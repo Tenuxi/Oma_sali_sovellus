@@ -18,4 +18,4 @@ code = max(codes, default=0) + 1
 assert code <= 2_100_000_000, 'Android versionCode exhausted'
 gh('api', '--method', 'POST', f'repos/{repo}/git/refs', '-f', f'ref=refs/tags/build-{code}', '-f', f'sha={os.environ["GITHUB_SHA"]}')
 with open(os.environ['GITHUB_ENV'], 'a') as out:
-    out.write(f'VERSION_CODE={code}\nVERSION_NAME=1.0.{code - 1}\n')
+    out.write(f'VERSION_CODE={code}\nVERSION_NAME=1.1.{code - 3}\n')

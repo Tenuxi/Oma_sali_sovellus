@@ -1,5 +1,15 @@
 # OMA SALI
 
+## Käyttöliittymä v1.1
+
+Etusivulla on yksi seuraavan päivän aloituspainike, muiden päivien valitsin sekä keskeneräisten ja viimeisimmän valmistuneen treenin yhteenveto. Liikekirjastossa on tiiviit rivit, lihasryhmävalinnat ja toimintovalikot. Ohjelmasta muokataan yhtä päivää kerrallaan.
+
+Treenissä vain yksi liike on avoinna. Muut liikkeet, tehdyt liikkeet ja ohitetut liikkeet ovat erillisissä tiiviissä listoissa. Avoin liike muistetaan treenikertakohtaisesti. Sarjojen numerokentät ja keskeneräisetkin syötteet säilytetään DataStoressa; kelvolliset sarjat tallennetaan entiseen tapaan Roomiin. Virheellistä syötettä ei lasketa suoritukseksi. Tilastot perustuvat edelleen vain Roomiin tallennettuihin kuitattuihin sarjoihin.
+
+Kehitys-näkymässä valitaan Liikkeet/Kehonpaino, liike, mittari ja aikaväli. Näkyvissä on yksi kuvaaja. Pistettä voi koskettaa tai valita Edellinen/Seuraava piste -painikkeilla. Valinnat muistetaan sovelluksen sulkemisen jälkeen. Käyttöliittymän navigointitila ja kenttäluonnokset ovat laitekohtaisia eivätkä muuta JSON-varmuuskopioformaattia. Varmuuskopion onnistunut palautus tyhjentää vanhat kenttäluonnokset, jotta ne eivät peitä palautettuja sarja-arvoja.
+
+Päivitys ei muuta Room-skeemaa (v2), sovelluksen tunnistetta tai release-avainta. Asenna uusi release-APK vanhan päälle poistamatta sovellusta.
+
 Suomenkielinen, kokonaan offline toimiva Android-treenipäiväkirja henkilökohtaiseen käyttöön. Sovelluksessa ei ole käyttäjätiliä, verkkolupaa, mainoksia tai analytiikkaa. Pysyvä applicationId on **fi.omasali.app**. Android 8.0 (API 26) tai uudempi.
 
 ## Käyttö
@@ -53,7 +63,7 @@ Release suoritetaan vain main-haaralla onnistuneen tarkistuksen jälkeen. Pysyv�
 
 VersionCode varataan GitHubin pysyvään `build-N`-tagiin ennen rakennusta. Yhteinen concurrency-lukko kattaa koko tarkistus- ja julkaisuprosessin. Vanhentuneen main-commitin julkaisu estetään. Uudelleenajo varaa uuden numeron, epäonnistuminen jättää aukon, eikä laskuri riipu työnkulun nimestä tai kellosta. **Älä poista tai siirrä `build-*`-tageja.** GitHub voi korvata jonossa odottavan ajon uudemmalla main-pushilla; käynnissä olevaa julkaisua ei keskeytetä. Uusimman ajon lähdekoodi sisältää aiemmat muutokset.
 
-VersionName alkaa `1.0.0`:sta ja kasvaa versionCode-varauksen mukaan. Rakennuksen jälkeen `apksigner` tarkistaa allekirjoituksen ja `aapt` pakettitunnuksen, version ja debug-lipun. Edellisen julkaistun APK:n sertifikaattiin ja versionCodeen verrataan ennen julkaisua. Vasta sitten syntyy `v1.0.N`-tagi ja **OMA-SALI-v1.0.N.apk** GitHub Releaseen. Työnkulku ei tee main-committeja eikä käynnistä itseään.
+VersionName käyttää käyttöliittymäversiosta v1.1 lähtien muotoa `1.1.N` ja kasvaa versionCode-varauksen mukaan (versionCode 3 vastaa versiota 1.1.0). Rakennuksen jälkeen `apksigner` tarkistaa allekirjoituksen ja `aapt` pakettitunnuksen, version ja debug-lipun. Edellisen julkaistun APK:n sertifikaattiin ja versionCodeen verrataan ennen julkaisua. Vasta sitten syntyy `v1.0.N`-tagi ja **OMA-SALI-v1.0.N.apk** GitHub Releaseen. Työnkulku ei tee main-committeja eikä käynnistä itseään.
 
 ## Asennus ja päivitys puhelimeen
 

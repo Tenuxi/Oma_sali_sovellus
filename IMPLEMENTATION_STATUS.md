@@ -1,5 +1,16 @@
 # Toteutustilanne
 
+## v1.1-käyttöliittymäpäivitys
+
+- UI-001: tiivis liikekirjasto ja toimintovalikot; ohjelman yhden päivän muokkaus ja skrollattava päivänvalinta.
+- UI-002: yksi avoin liike, tiiviit sarjarivit, tehdyt/ohitetut listat, eteneminen, seuraava liike/yhteenveto. Avoin liike ja syöttöluonnokset tallentuvat DataStoreen.
+- UI-003: yksi ensisijainen aloitus, muiden päivien valinta, keskeneräiset ja oikeasta datasta laskettu edellisen treenin yhteenveto.
+- UI-004: Liikkeet/Kehonpaino, yksi valittu mittari ja kuvaaja, tarkka pistevalinta sekä pysyvät valinnat.
+- VIS-001: nykyisen tumman/vaalean Material 3 -teeman tiiviit rivit, saavutettavat kenttien nimet, vähintään 48 dp kosketuskohteet, vaakavieritettävät valinnat.
+- Room-skeema ja historialliset tietomallit säilyvät ennallaan; ei uutta migraatiota. Sama applicationId ja release-sertifikaatti.
+- Lisätty kohdennetut DataStore-uudelleenavaus-, syöttö-, valmistumis-, kuvaajadata- ja Compose-käyttöliittymätestit. Compose-testi tuottaa kuvakaappaukset CI:n raporttiartifaktiin. Viimeisin todellinen tarkistus- ja julkaisutilanne: [GitHub Actions](https://github.com/Tenuxi/Oma_sali_sovellus/actions).
+- Fyysisen puhelimen käytettävyys ja uuden version asentaminen olemassa olevan päälle ovat käyttäjän laitteella vielä varmennettavia.
+
 ## Toteutettu lähdekoodiin
 
 - Android-projekti, Compose/Material 3, viisi suomenkielistä päänäkymää, teemat ja näytön päälläpito.
