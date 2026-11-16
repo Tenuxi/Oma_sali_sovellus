@@ -26,8 +26,8 @@ jobs:
           packages: platform-tools platforms;android-36 build-tools;35.0.0
           log-accepted-android-sdk-licenses: false
       - uses: gradle/actions/setup-gradle@v4
-      - name: Unit, persistence and backup tests; lint; installable debug build
-        run: ./gradlew testDebugUnitTest lintDebug assembleDebug --stacktrace
+      - name: Unit, persistence and backup tests; release lint
+        run: ./gradlew testDebugUnitTest lintRelease --stacktrace
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -35,10 +35,6 @@ jobs:
           path: |
             app/build/reports
             app/schemas
-      - uses: actions/upload-artifact@v4
-        with:
-          name: OMA-SALI-debug-development-only
-          path: app/build/outputs/apk/debug/app-debug.apk
   release:
     needs: verify
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
@@ -80,8 +76,8 @@ jobs:
         shell: bash
         run: |
           umask 077
-          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.jks"
-          echo "KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.p12"
+          echo "KEYSTORE_FILE=$RUNNER_TEMP/release.p12" >> "$GITHUB_ENV"
       - name: Build signed release
         run: ./gradlew assembleRelease --stacktrace
       - name: Check signature, identity and update compatibility
@@ -92,4 +88,4 @@ jobs:
           gh release create "v$VERSION_NAME" "dist/OMA-SALI-v$VERSION_NAME.apk" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "OMA SALI v$VERSION_NAME" --notes "Allekirjoitettu offline-Android-sovellus. versionCode: $VERSION_CODE. Asenna olemassa olevan OMA SALI -sovelluksen päälle. Ota varmuuskopio ennen päivitystä."
       - name: Remove decoded key
         if: always()
-        run: rm -f "$RUNNER_TEMP/release.jks"
+        run: rm -f "$RUNNER_TEMP/release.p12"

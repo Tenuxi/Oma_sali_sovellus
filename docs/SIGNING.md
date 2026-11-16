@@ -1,5 +1,11 @@
 # Pysyvä release-allekirjoitus
 
+**Pysyvä avain luotu ja neljä GitHub Secrets -arvoa asetettu 16.11.2026. Älä luo uutta avainta.** Käytössä on RSA-4096 / PKCS12, alias `oma-sali`. Julkinen sertifikaatin SHA-256 on tiedostossa `release-certificate.sha256`; julkaisutyönkulku tarkistaa sen myös ensimmäisessä julkaisussa.
+
+Paikallinen yksityinen avainhakemisto: `/home/joonas/.local/share/oma-sali-signing/`. `oma-sali-key-backup.tar.gz` sisältää salatun avaimen ilman salasanaa. `password.txt` sisältää avaimen salasanan. Kopioi arkisto erilliselle turvalliselle varmuuskopiovälineelle ja salasana salasanojen hallintaan. Hakemisto ei kuulu Git-repositorioon.
+
+Alla oleva luontiohje on vain uuden projektin kertaluonteista käyttöönottoa varten, ei nykyisen avaimen korvaamiseen.
+
 Repositorio ei sisällä avaimia tai salasanoja. Julkaisu estetään, kun jokin neljästä salaisuudesta puuttuu. Älä generoi uutta avainta työnkulussa. Ensimmäisen julkaisun avain ja applicationId `fi.omasali.app` ovat pysyviä.
 
 ## Kertaluonteinen käyttöönotto
@@ -7,7 +13,7 @@ Repositorio ei sisällä avaimia tai salasanoja. Julkaisu estetään, kun jokin 
 1. Luo avain luotetulla koneella **repositorion ulkopuolelle**, salattuun turvalliseen hakemistoon. JDK:n keytool kysyy salasanan interaktiivisesti, joten salasana ei päädy komentohistoriaan:
 
    ```sh
-   keytool -genkeypair -v -keystore oma-sali-release.jks -storetype JKS -alias oma-sali -keyalg RSA -keysize 4096 -validity 36500
+   keytool -genkeypair -v -keystore oma-sali-release.p12 -storetype PKCS12 -alias oma-sali -keyalg RSA -keysize 4096 -validity 36500
    ```
 
 2. Tee avaimesta erillinen salattu offline-varmuuskopio ja säilytä salasanat salasanojen hallinnassa. Varmista, että varmuuskopio voidaan avata. Avaimen katoaminen estää olemassa olevan asennuksen päivittämisen.
@@ -21,7 +27,7 @@ Repositorio ei sisällä avaimia tai salasanoja. Julkaisu estetään, kun jokin 
    `gh`-CLI:llä avaimen voi siirtää tulostamatta sitä konsoliin:
 
    ```sh
-   base64 -w0 oma-sali-release.jks | gh secret set ANDROID_KEYSTORE_BASE64 --repo Tenuxi/Oma_sali_sovellus
+   base64 -w0 oma-sali-release.p12 | gh secret set ANDROID_KEYSTORE_BASE64 --repo Tenuxi/Oma_sali_sovellus
    gh secret set ANDROID_KEYSTORE_PASSWORD --repo Tenuxi/Oma_sali_sovellus
    gh secret set ANDROID_KEY_ALIAS --repo Tenuxi/Oma_sali_sovellus
    gh secret set ANDROID_KEY_PASSWORD --repo Tenuxi/Oma_sali_sovellus

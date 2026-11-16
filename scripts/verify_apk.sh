@@ -3,6 +3,13 @@ set -euo pipefail
 build_tools=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)
 apk=app/build/outputs/apk/release/app-release.apk
 "$build_tools/apksigner" verify --verbose --print-certs "$apk" > "$RUNNER_TEMP/new-cert.txt"
+python3 - "$RUNNER_TEMP/new-cert.txt" <<'PYVERIFY'
+from pathlib import Path
+import re, sys
+expected = Path('docs/release-certificate.sha256').read_text().strip().lower()
+actual = re.search(r'Signer #1 certificate SHA-256 digest: ([0-9a-fA-F]+)', Path(sys.argv[1]).read_text())
+assert actual and actual[1].lower() == expected, 'APK does not use the permanent OMA SALI release certificate'
+PYVERIFY
 "$build_tools/aapt" dump badging "$apk" > "$RUNNER_TEMP/badging.txt"
 python3 - "$RUNNER_TEMP/badging.txt" <<'PY'
 import os, re, sys

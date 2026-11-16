@@ -19,7 +19,8 @@
 - Paikallista Gradle-rakennusta tai emulaattoria ei ajettu käyttäjän ohjeen mukaisesti.
 - GitHub Actions: testit, lint-tarkistus ja debug-APK:n rakennus on läpäisty. V2-migraation sisältävä ajo 43835656032 läpäisi kaikki 12 testiä. Viimeisimmän commitin tulos näkyy [Actionsissa](https://github.com/Tenuxi/Oma_sali_sovellus/actions). SDK-valmistelun vanhentunut tools-oletus korjattiin.
 - Lisätty kuvan/poistomerkinnän palautustesti, kehonpainon historiatestit ja suurten tietueiden migraatiotesti. Ne läpäisivät Actions-tarkistuksen. Lisäksi mukana on Unicode-merkkien pilkkomisrajan testi.
-- Release-allekirjoitussalaisuudet puuttuvat repositoriosta (tarkistettu 16.11.2026). Julkaisu ei voi onnistua ennen niiden käyttöönottoa.
+- Pysyvä RSA-4096 / PKCS12 -release-avain ja kaikki neljä GitHub Secrets -arvoa otettu käyttöön 16.11.2026. Salattu avainvarmuuskopio on repositorion ulkopuolella. Julkaisun sertifikaatti tarkistetaan versionhallinnassa olevaan julkiseen sormenjälkeen.
+- Työnkulku rakentaa ladattavaksi vain release-APK:n. Varsinaiset julkaisut: [GitHub Releases](https://github.com/Tenuxi/Oma_sali_sovellus/releases/latest).
 - Fyysisellä laitteella käynnistys, käytettävyys ja APK:n päivitysasennus: ei vielä testattu.
 - Room v2 pilkkoo suuret aggregaatit turvallisiin osiin. V1 → v2 -migraatio ja yli 2 Mt tietueen säilymistesti on toteutettu. V1- ja v2-skeemat ovat versionhallinnassa.
 
@@ -30,4 +31,4 @@
 - Ristiriidan valinta koskee kokonaista ohjelmaa/treeniä, ei yksittäistä sarjaa.
 - Kokorajat: 32 Mt varmuuskopio, 12 Mt alkuperäiskuva, 300 kt tallennettu JPEG.
 
-Kehitys-APK on rakennettu, mutta tätä ei merkitä valmiiksi julkaistuksi v1.0:ksi ennen pysyvää allekirjoitusta ja laitevarmennusta.
+Pysyvä allekirjoitus on määritetty ja automaattinen release-julkaisu käytössä. Fyysisen laitteen käytettävyys- ja päivitysvarmennus on vielä tehtävä.

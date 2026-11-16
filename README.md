@@ -47,9 +47,9 @@ Debug-APK löytyy `app/build/outputs/apk/debug/app-debug.apk`. Se on vain kehity
 
 ## GitHub Actions ja julkaisut
 
-Main-push ja manuaalinen ajo suorittavat kohdennetut testit, Android lintin ja debug-rakennuksen. PR-ajot eivät pääse allekirjoitussalaisuuksiin. Tarkistusraportit, Room-skeema ja kehitys-APK tallennetaan Actions-artifakteiksi.
+Main-push ja manuaalinen ajo suorittavat kohdennetut testit ja release-version Android lintin. Ladattavaksi rakennetaan vain pysyvällä avaimella allekirjoitettu release-APK. PR-ajot eivät pääse allekirjoitussalaisuuksiin. Tarkistusraportit ja Room-skeema tallennetaan Actions-artifakteiksi. Kehitys-APK:ta ei julkaista.
 
-Release suoritetaan vain main-haaralla onnistuneen tarkistuksen jälkeen. Se edellyttää neljää pysyvää allekirjoitussalaisuutta; katso [allekirjoitusohje](docs/SIGNING.md). Puuttuva salaisuus aiheuttaa selkeän virheen eikä releasea luoda.
+Release suoritetaan vain main-haaralla onnistuneen tarkistuksen jälkeen. Pysyvä RSA-4096-allekirjoitusavain ja neljä salaisuutta on otettu käyttöön 16.11.2026; katso [allekirjoitusohje](docs/SIGNING.md). Puuttuva salaisuus aiheuttaa selkeän virheen eikä releasea luoda.
 
 VersionCode varataan GitHubin pysyvään `build-N`-tagiin ennen rakennusta. Yhteinen concurrency-lukko kattaa koko tarkistus- ja julkaisuprosessin. Vanhentuneen main-commitin julkaisu estetään. Uudelleenajo varaa uuden numeron, epäonnistuminen jättää aukon, eikä laskuri riipu työnkulun nimestä tai kellosta. **Älä poista tai siirrä `build-*`-tageja.** GitHub voi korvata jonossa odottavan ajon uudemmalla main-pushilla; käynnissä olevaa julkaisua ei keskeytetä. Uusimman ajon lähdekoodi sisältää aiemmat muutokset.
 

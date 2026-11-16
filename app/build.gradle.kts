@@ -17,6 +17,7 @@ android {
     }
     signingConfigs {
         create("release") {
+            storeType = "PKCS12"
             providers.environmentVariable("KEYSTORE_FILE").orNull?.let { storeFile = file(it) }
             storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
             keyAlias = System.getenv("ANDROID_KEY_ALIAS")
