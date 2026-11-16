@@ -254,7 +254,7 @@ fun loadLabel(load: Load) = when (load) { Load.EXTERNAL -> "Ulkoinen paino"; Loa
                 if (ex.target.notes.isNotBlank()) Text(ex.target.notes)
                 if (ex.notes.isNotBlank()) Text(ex.notes)
                 Photo(ex.exercise.photo)
-                val previous = rows.values<WorkoutSession>("session").filter { it.id != s.id && it.status != Status.CANCELLED && it.started <= s.started }.sortedByDescending { it.started }.firstNotNullOfOrNull { session -> session.exercises.firstOrNull { it.exercise.id == ex.exercise.id && !it.skipped && it.sets.any { set -> set.done } } }
+                val previous = rows.values<WorkoutSession>("session").filter { it.id != s.id && it.status != Status.CANCELLED && it.started <= s.started }.sortedByDescending { it.started }.firstNotNullOfOrNull { session -> session.exercises.firstOrNull { it.exercise.id == ex.exercise.id && it.exercise.load == ex.exercise.load && !it.skipped && it.sets.any { set -> set.done } } }
                 if (previous != null) {
                     Text("Edellinen: " + previous.sets.filter { it.done }.joinToString(" · ") { setSummary(it, previous.exercise.load) })
                     suggestion(previous)?.let { Text("Ehdotus: $it", color = MaterialTheme.colorScheme.primary) }
@@ -304,12 +304,13 @@ fun setSummary(s: WorkoutSet, load: Load) = when (load) {
     var weight by rememberSaveable(set.id) { mutableStateOf(kg(set.grams)) }; var reps by rememberSaveable(set.id) { mutableStateOf("${set.reps}") }
     var body by rememberSaveable(set.id) { mutableStateOf(set.body?.let(::kg) ?: "") }; var added by rememberSaveable(set.id) { mutableStateOf(kg(set.added)) }; var assistance by rememberSaveable(set.id) { mutableStateOf(kg(set.assistance)) }
     var invalid by remember { mutableStateOf(false) }
-    fun persist(done: Boolean = set.done) {
+    var checked by rememberSaveable(set.id) { mutableStateOf(set.done) }
+    fun persist(done: Boolean = checked) {
         try {
             val r = reps.toInt(); require(r in 0..1000 && (!done || r > 0))
             val update = set.copy(grams = grams(weight), reps = r, body = body.takeIf { it.isNotBlank() }?.let(::grams), added = grams(added), assistance = grams(assistance), done = done)
             require(update.body == null || update.body > 0); require(update.added == 0L || update.assistance == 0L)
-            invalid = false; save(update)
+            invalid = false; checked = done; save(update)
         } catch (_: Exception) { invalid = true }
     }
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -323,7 +324,7 @@ fun setSummary(s: WorkoutSet, load: Load) = when (load) {
             OutlinedTextField(added, { added = it; persist() }, label = { Text("Lisäpaino kg") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
             OutlinedTextField(assistance, { assistance = it; persist() }, label = { Text("Avustus kg") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
         }
-        Row { Checkbox(set.done, { persist(it) }); Text("Tehty", Modifier.padding(top = 12.dp)); Spacer(Modifier.weight(1f)); TextButton(onClick = delete) { Text("Poista sarja") } }
+        Row { Checkbox(checked, { persist(it) }); Text("Tehty", Modifier.padding(top = 12.dp)); Spacer(Modifier.weight(1f)); TextButton(onClick = delete) { Text("Poista sarja") } }
         if (invalid) Text("Tarkista luvut. Virheellistä arvoa ei tallennettu. Käytä joko lisäpainoa tai avustusta.", color = MaterialTheme.colorScheme.error)
     }
 }

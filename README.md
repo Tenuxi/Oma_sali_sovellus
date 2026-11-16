@@ -33,7 +33,7 @@ Kotlin 2.2.20, Jetpack Compose / Material 3, Navigation Compose, Room 2.8.4, Dat
 - `.github/workflows/android.yml`: tarkistus ja julkaisu.
 - `scripts/`: version varaaminen ja APK-tarkistus.
 
-Room sisältää versionoidut JSON-aggregaatit erillisillä pysyvillä pääavaimilla. Päivät ja tavoiteliikkeet kuuluvat ohjelma-aggregaattiin, suoritukset ja sarjat treeniaggregaattiin. Kiertotapahtuma kuuluu treenikertaan (muuttumaton `cycleOrder` ja päivän ID); päivämäärän korjaus ei muuta kiertojärjestystä. Historiassa ei ole poistokaskadeja ohjelmiin tai liikekirjastoon. DataStore tallentaa laitekohtaisen viimeisen vientiajan; varmuuskopioitavat asetukset ovat Roomissa, jotta palautus on atominen.
+Room sisältää versionoidut JSON-aggregaatit pysyvillä tunnisteilla. Ne tallennetaan 64 000 merkin osiin, jotta useita kuvia sisältävä treenikerta ei ylitä Androidin CursorWindow-lukurajaa. Päivät ja tavoiteliikkeet kuuluvat ohjelma-aggregaattiin, suoritukset ja sarjat treeniaggregaattiin. Kiertotapahtuma kuuluu treenikertaan (muuttumaton `cycleOrder` ja päivän ID); päivämäärän korjaus ei muuta kiertojärjestystä. Historiassa ei ole poistokaskadeja ohjelmiin tai liikekirjastoon. DataStore tallentaa laitekohtaisen viimeisen vientiajan; varmuuskopioitavat asetukset ovat Roomissa, jotta palautus on atominen.
 
 ## Android Studio ja paikallinen rakentaminen
 
@@ -51,7 +51,7 @@ Main-push ja manuaalinen ajo suorittavat kohdennetut testit, Android lintin ja d
 
 Release suoritetaan vain main-haaralla onnistuneen tarkistuksen jälkeen. Se edellyttää neljää pysyvää allekirjoitussalaisuutta; katso [allekirjoitusohje](docs/SIGNING.md). Puuttuva salaisuus aiheuttaa selkeän virheen eikä releasea luoda.
 
-VersionCode varataan GitHubin pysyvään `build-N`-tagiin ennen rakennusta. Yhteinen concurrency-lukko kattaa koko tarkistus- ja julkaisuprosessin. Uudelleenajo varaa uuden numeron, epäonnistuminen jättää aukon, eikä laskuri riipu työnkulun nimestä tai kellosta. **Älä poista tai siirrä `build-*`-tageja.** GitHub voi korvata jonossa odottavan ajon uudemmalla main-pushilla; käynnissä olevaa julkaisua ei keskeytetä. Uusimman ajon lähdekoodi sisältää aiemmat muutokset.
+VersionCode varataan GitHubin pysyvään `build-N`-tagiin ennen rakennusta. Yhteinen concurrency-lukko kattaa koko tarkistus- ja julkaisuprosessin. Vanhentuneen main-commitin julkaisu estetään. Uudelleenajo varaa uuden numeron, epäonnistuminen jättää aukon, eikä laskuri riipu työnkulun nimestä tai kellosta. **Älä poista tai siirrä `build-*`-tageja.** GitHub voi korvata jonossa odottavan ajon uudemmalla main-pushilla; käynnissä olevaa julkaisua ei keskeytetä. Uusimman ajon lähdekoodi sisältää aiemmat muutokset.
 
 VersionName alkaa `1.0.0`:sta ja kasvaa versionCode-varauksen mukaan. Rakennuksen jälkeen `apksigner` tarkistaa allekirjoituksen ja `aapt` pakettitunnuksen, version ja debug-lipun. Edellisen julkaistun APK:n sertifikaattiin ja versionCodeen verrataan ennen julkaisua. Vasta sitten syntyy `v1.0.N`-tagi ja **OMA-SALI-v1.0.N.apk** GitHub Releaseen. Työnkulku ei tee main-committeja eikä käynnistä itseään.
 
@@ -61,6 +61,6 @@ Lataa allekirjoitettu APK projektin [Releases-sivulta](https://github.com/Tenuxi
 
 ## Skeema ja rajoitukset
 
-Ensimmäinen Room-skeema on v1; aiempaa julkaistua skeemaa ei ole. Destructive migrationia ei käytetä. Tuleva skeemamuutos edellyttää eksplisiittistä migraatiota, vanhan skeeman säilyttämistä ja migraatiotestiä. Myös JSON-payloadin muutokset tarvitsevat yhteensopivuuden tai formaattimigraation; älä poista serialisoituja kenttiä huomaamatta.
+Room-skeema on v2. Kehitysversion v1-tietueet pilkotaan tietoja säilyttävällä SQL-migraatiolla. V1-skeema säilytetään lähdekoodissa, ja migraatiotesti kattaa yli 2 Mt tietueen sekä sen myöhemmän pienentämisen. Destructive migrationia ei käytetä. Tuleva skeemamuutos edellyttää eksplisiittistä migraatiota, vanhan skeeman säilyttämistä ja migraatiotestiä. Myös JSON-payloadin muutokset tarvitsevat yhteensopivuuden tai formaattimigraation; älä poista serialisoituja kenttiä huomaamatta.
 
 Kuvien ja varmuuskopioiden kokorajat ovat tarkoituksellisia. Suuri historia luetaan tällä hetkellä muistissa Flow-tilaksi; erittäin laajalle aineistolle tarvitaan sivutus. Varmuuskopion ristiriidan ratkaisu on aggregaattikohtainen. Käyrät ovat yksinkertaisia eivätkä tarjoa zoomausta. Fyysisen Android-laitteen käytettävyys ja päivitysasennus on vielä tarkistettava ensimmäisen allekirjoitetun APK:n valmistuttua. Ajantasaiset varmennetut tulokset ja avoimet asiat: [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).

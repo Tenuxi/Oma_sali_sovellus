@@ -17,10 +17,11 @@
 ## Varmennus ja julkaisu
 
 - Paikallista Gradle-rakennusta tai emulaattoria ei ajettu käyttäjän ohjeen mukaisesti.
-- GitHub Actionsin ensimmäinen tarkistus: odottaa ajoa.
+- GitHub Actions: ensimmäinen varsinainen Gradle-tarkistus onnistui (ajo 43834657430): 9 testiä läpi, lint 0 virhettä, debug-APK rakennettu. SDK-valmistelun vanhentunut tools-oletus korjattiin. Viimeisimmän commitin tulos näkyy [Actionsissa](https://github.com/Tenuxi/Oma_sali_sovellus/actions).
+- Lisätty kuvan/poistomerkinnän palautustesti, kehonpainon historiatestit ja suurten tietueiden migraatiotesti. Ne kuuluvat samaan Actions-tarkistukseen.
 - Release-allekirjoitussalaisuudet puuttuvat repositoriosta (tarkistettu 16.11.2026). Julkaisu ei voi onnistua ennen niiden käyttöönottoa.
 - Fyysisellä laitteella käynnistys, käytettävyys ja APK:n päivitysasennus: ei vielä testattu.
-- Room v1 on ensimmäinen skeema. Vanhoja julkaistuja skeemoja/migraatioita ei ole; tulevat muutokset tarvitsevat migraation ja sen testin.
+- Room v2 pilkkoo suuret aggregaatit turvallisiin osiin. V1 → v2 -migraatio ja yli 2 Mt tietueen säilymistesti on toteutettu. Alkuperäinen v1-skeema on versionhallinnassa.
 
 ## Avoimet viimeistelyt / rajaukset
 
@@ -29,4 +30,4 @@
 - Ristiriidan valinta koskee kokonaista ohjelmaa/treeniä, ei yksittäistä sarjaa.
 - Kokorajat: 32 Mt varmuuskopio, 12 Mt alkuperäiskuva, 300 kt tallennettu JPEG.
 
-Tätä ei merkitä valmiiksi julkaistuksi v1.0:ksi ennen onnistunutta rakennusta, pysyvää allekirjoitusta ja laitevarmennusta.
+Kehitys-APK on rakennettu, mutta tätä ei merkitä valmiiksi julkaistuksi v1.0:ksi ennen pysyvää allekirjoitusta ja laitevarmennusta.

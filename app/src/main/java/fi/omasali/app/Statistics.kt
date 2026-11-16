@@ -33,7 +33,7 @@ import java.time.ZonedDateTime
     Text("Viimeisin: ${"%.1f".format(sorted.last().second)} $unit")
 }
 @Composable fun Statistics(vm: SaliViewModel, rows: List<Record>) {
-    var months by rememberSaveable { mutableStateOf(0) }; var selected by rememberSaveable { mutableStateOf<String?>(null) }
+    var months by rememberSaveable { mutableIntStateOf(0) }; var selected by rememberSaveable { mutableStateOf<String?>(null) }
     var pick by remember { mutableStateOf(false) }; var weightEdit by remember { mutableStateOf<BodyWeightEntry?>(null) }
     var fixedWeight by rememberSaveable { mutableStateOf("") }
     val after = if (months == 0) 0 else ZonedDateTime.now().minusMonths(months.toLong()).toInstant().toEpochMilli()
@@ -56,7 +56,7 @@ import java.time.ZonedDateTime
                 OutlinedTextField(fixedWeight, { fixedWeight = it }, label = { Text("Seuraa tiettyä ulkoista painoa (kg)") }, modifier = Modifier.fillMaxWidth())
                 val g = runCatching { grams(fixedWeight) }.getOrNull()
                 if (g != null) Chart("Toistot painolla ${kg(g)} kg", external.mapNotNull { (t, x) -> x.sets.filter { it.done && it.grams == g }.maxOfOrNull { it.reps.toDouble() }?.let { t to it } }, "toistoa")
-                Chart("Ulkoinen volyymi / treeni", external.groupBy { it.first }.map { (t, xs) -> t to xs.sumOf { volume(it.second) } / 1000.0 }, "kg")
+                Chart("Ulkoinen volyymi / treeni", sessions.mapNotNull { session -> val xs = session.exercises.filter { it.exercise.id == e.id && it.exercise.load == Load.EXTERNAL && !it.skipped && it.sets.any { set -> set.done } }; if (xs.isEmpty()) null else session.started to xs.sumOf(::volume) / 1000.0 }, "kg")
                 Chart("Arvioitu 1RM (Epley, 1–12 toistoa)", external.mapNotNull { (t, x) -> oneRm(x)?.let { t to it } }, "kg, arvio")
                 if (body.isNotEmpty()) {
                     Chart("Suurin lisäpaino", body.mapNotNull { (t, x) -> x.sets.filter { it.done }.maxOfOrNull { it.added / 1000.0 }?.let { t to it } }, "kg")

@@ -10,6 +10,8 @@ def gh(*args):
     return subprocess.check_output(['gh', *args], text=True)
 
 repo = os.environ['GITHUB_REPOSITORY']
+head = json.loads(gh('api', f'repos/{repo}/commits/main'))['sha']
+assert head == os.environ['GITHUB_SHA'], 'Refusing to release an obsolete main commit; run the latest main workflow'
 refs = json.loads(gh('api', f'repos/{repo}/git/matching-refs/tags/build-'))
 codes = [int(r['ref'].rsplit('build-', 1)[1]) for r in refs if r['ref'].rsplit('build-', 1)[1].isdigit()]
 code = max(codes, default=0) + 1

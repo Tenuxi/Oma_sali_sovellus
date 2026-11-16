@@ -10,9 +10,11 @@ import kotlinx.serialization.encodeToString
 
 val Context.preferences by preferencesDataStore("device_preferences")
 class Repository(val db: SaliDatabase) {
-    val records = db.records().observe().map { rows -> rows.map { codec.decodeFromString<Record>(it.json) } }
-    suspend fun all() = db.records().all().map { codec.decodeFromString<Record>(it.json) }
-    private suspend fun write(records: List<Record>) = db.records().put(records.map { StoredRecord(it.id, codec.encodeToString(it)) })
+    val records = db.records().observe().map(::decodeRows)
+    suspend fun all() = decodeRows(db.records().all())
+    private suspend fun write(records: List<Record>) {
+        records.forEach { r -> db.records().removeParts(r.id); db.records().put(encodeRows(r)) }
+    }
     suspend fun initialize() = db.withTransaction {
         if (all().isEmpty()) {
             val names = listOf("Penkkipunnerrus" to "Rinta", "Kyykky" to "Jalat", "Maastaveto" to "Selkä", "Pystypunnerrus" to "Olkapäät", "Kulmasoutu" to "Selkä", "Jalkaprässi" to "Jalat", "Hauiskääntö" to "Kädet", "Ojentajapunnerrus" to "Kädet", "Punnerrus" to "Rinta", "Leuanveto" to "Selkä")
